@@ -130,3 +130,5 @@ EXPOSE 80
 
 CMD ["node", "server.js"]
 ```
+
+![image](https://user-images.githubusercontent.com/27693622/230775757-cb3d10ec-7578-496c-a4f9-8f25cd026e9d.png)
