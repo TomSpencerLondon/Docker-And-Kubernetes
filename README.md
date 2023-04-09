@@ -109,7 +109,7 @@ COPY . /app
 ```
 makes a copy of the code into the image. Images are locked and finished after we build the image.
 
-
+![image](https://user-images.githubusercontent.com/27693622/230774755-90fd19fd-a069-440d-ac7a-ab69ab2b8caa.png)
 
 
 
