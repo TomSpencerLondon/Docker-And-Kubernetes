@@ -133,7 +133,7 @@ CMD ["node", "server.js"]
 
 ![image](https://user-images.githubusercontent.com/27693622/230775757-cb3d10ec-7578-496c-a4f9-8f25cd026e9d.png)
 
-The containers run independently of the image and can be mae to run in parallel. The image is a blueprint for the
+The containers run independently of the image and can be made to run in parallel. The image is a blueprint for the
 containers which then are running instances with read and write access. This allows multiple containers to be based
 on the same image without interfering with each other. Containers are separated from each other and have no shared
 date or state by default. A container is an isolated unit of software based on an image. A container is a running instance
