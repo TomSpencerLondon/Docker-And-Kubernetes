@@ -111,6 +111,22 @@ makes a copy of the code into the image. Images are locked and finished after we
 
 ![image](https://user-images.githubusercontent.com/27693622/230774755-90fd19fd-a069-440d-ac7a-ab69ab2b8caa.png)
 
+The layer based architecture allows Docker to use caches to rebuild images. It will only rebuild a layer if it detects
+that code has changed on the source code.
 
+This version of our Dockerfile will ensure that npm install is not run everytime code has changed:
+```dockerfile
+FROM node
 
+WORKDIR /app
 
+COPY package.json /app
+
+RUN npm install
+
+COPY . /app
+
+EXPOSE 80
+
+CMD ["node", "server.js"]
+```
