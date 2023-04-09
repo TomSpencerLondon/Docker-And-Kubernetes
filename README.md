@@ -141,3 +141,5 @@ of the image. Each instruction to create an image creates a cacheable layer - th
 sharing.
 
 ### Managing Images and Containers
+
+![image](https://user-images.githubusercontent.com/27693622/230777233-d25ad34e-6002-4801-94a0-65dc10fe519f.png)
