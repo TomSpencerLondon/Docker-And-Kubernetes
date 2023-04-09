@@ -69,6 +69,47 @@ Images contain the setup, Containers are the running version of the image.
 Typically we would build up on the node image and then add the application code to the base image to execute the code
 within the base image. We would then write our own Dockerfile based on the image.
 
+We now add a Dockerfile for building the nodejs-app-starting-setup:
+```dockerfile
+FROM node
+
+WORKDIR /app
+
+COPY . /app
+
+RUN npm install
+
+EXPOSE 80
+
+CMD ["node", "server.js"]
+```
+We build the image with:
+```bash
+docker build -t nodejs-app . 
+```
+
+This now shows an image:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/first-demo-starting-setup$ docker images
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+nodejs-app   latest    df28934e6946   3 days ago    916MB
+```
+
+We need to expose the port in order to view the application:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/nodejs-app-starting-setup$ docker run -p 3000:80 7fa
+```
+![image](https://user-images.githubusercontent.com/27693622/230773820-d05619f7-ad4f-4459-a040-4a878e5d255e.png)
+
+
+### Images are read only
+In the Dockerfile this line:
+```dockerfile
+COPY . /app
+```
+makes a copy of the code into the image. Images are locked and finished after we build the image.
+
+
 
 
 
