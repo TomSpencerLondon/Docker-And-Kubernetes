@@ -484,3 +484,14 @@ We can then set a default port via ARGs:
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ docker build -t feedback:dev --build-arg DEFAULT_PORT=8000 .
 
 ```
+
+### Networking: Cross-Container Communication
+- how to use networks inside containers
+- how to connect multiple containers
+- connect Container to other ports on your machine
+- connect to web from container
+- containers and external networks
+- connecting containers with networks
+
+#### Connecting to external sites
+
