@@ -143,3 +143,50 @@ sharing.
 ### Managing Images and Containers
 
 ![image](https://user-images.githubusercontent.com/27693622/230777233-d25ad34e-6002-4801-94a0-65dc10fe519f.png)
+
+We can also attach to already-running containers with:
+```bash
+docker attach <IMAGE ID>
+```
+We can also view the logs with:
+```bash
+ docker logs -f <IMAGE ID>
+```
+We can also attach to console output with the following:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/python-app-starting-setup$ docker start -ai deb
+Please enter the min number: 10
+Please enter the max number: 23
+11
+```
+
+You can run:
+```bash
+docker container prune
+```
+to delete all stopped containers. To delete all unused images run:
+```bash
+docker image prune 
+```
+To automatically remove containers when they exit we can run:
+```bash
+docker run -p 3000:80 -d --rm <IMAGE ID>
+```
+
+We can also inspect an image with:
+```bash
+docker image inspect <IMAGE ID>
+```
+
+To look at and change docker containers:
+```bash
+docker 
+```
+
+We can copy local files to running containers with:
+```bash
+docker cp dummy/. hungry_kilby:/test
+```
+This is useful for adding files to running containers. This might be useful for configuration changes.
+Copying files out of a container can also be useful for log files.
+
