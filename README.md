@@ -190,3 +190,5 @@ docker cp dummy/. hungry_kilby:/test
 This is useful for adding files to running containers. This might be useful for configuration changes.
 Copying files out of a container can also be useful for log files.
 
+![image](https://user-images.githubusercontent.com/27693622/230872646-d82e5b91-8d42-4dd7-91ec-7805adec5206.png)
+
