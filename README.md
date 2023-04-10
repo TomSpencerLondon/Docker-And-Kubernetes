@@ -192,3 +192,12 @@ Copying files out of a container can also be useful for log files.
 
 ![image](https://user-images.githubusercontent.com/27693622/230872646-d82e5b91-8d42-4dd7-91ec-7805adec5206.png)
 
+To name a container you can run:
+```bash
+docker run --name <NAME> -it --rm <IMAGE_ID>
+```
+
+We can also run:
+```bash
+docker run --name server -p 3000:3000 --rm 53b
+```
