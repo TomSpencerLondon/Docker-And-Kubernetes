@@ -201,3 +201,16 @@ We can also run:
 ```bash
 docker run --name server -p 3000:3000 --rm 53b
 ```
+
+You can also rename images:
+
+```bash
+docker tag node-demo:latest academind/node-hello-world
+```
+
+You can also push images that you have tagged:
+```bash
+docker push tomspencerlondon/node-hello-world:1
+```
+
+
