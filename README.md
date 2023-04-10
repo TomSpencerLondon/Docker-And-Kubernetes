@@ -496,3 +496,33 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ 
 #### Connecting to external sites
 
 ![image](https://user-images.githubusercontent.com/27693622/230928391-ab153412-9954-4619-a2c7-ad95803bef6a.png)
+
+In our example application we are using axios to make a get request to the Star Wars API:
+```javascript
+
+
+app.get('/movies', async (req, res) => {
+  try {
+    const response = await axios.get('https://swapi.dev/api/films');
+    res.status(200).json({ movies: response.data });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
+});
+
+
+app.get('/people', async (req, res) => {
+  try {
+    const response = await axios.get('https://swapi.dev/api/people');
+    res.status(200).json({ people: response.data });
+  } catch (error) {
+    res.status(500).json({ message: 'Something went wrong.' });
+  }
+});
+```
+
+The Star Wars API is an outside application which means we will have http communication between our container
+and the API.
+
+### Container to LocalHost machine communication
+
