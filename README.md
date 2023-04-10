@@ -411,3 +411,76 @@ You can delete all dangling volumes with:
 ```bash
     docker volume rm -f ${docker volume ls -f dangling=true -q}
 ```
+
+We can use .dockerignore to specify which folders to ignore when we run
+the Dockerfile, in particular the ```COPY . .``` command.
+
+Docker supports build-time ARGs and runtime ENV variables.
+- ARG (set on image build) via --build-arg
+- set via ENV in Dockerfile or via --env on docker run
+
+For instance we can expect a port environment variable:
+```javascript
+app.listen(process.env.PORT);
+```
+
+We can then add the environment variable:
+
+```dockerfile
+FROM node:14
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+ENV PORT 80
+
+EXPOSE $PORT
+
+# VOLUME ["/app/node_modules"]
+
+CMD ["npm", "start"]
+```
+
+We can then set the port in our docker run command:
+```bash
+docker run -d -p 3000:8000 --env PORT=8000 --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/temp -v /app/node_modules feedback:env
+```
+
+You can also specify environment variables via ```--env-file```:
+```bash
+docker run -d -p 3000:8000 --env-file ./.env --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/temp -v /app/node_modules feedback:env
+```
+The values would then be run from the file. We can add an ARG with the following:
+```dockerfile
+FROM node:14
+
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+ARG DEFAULT_PORT=80
+
+COPY . .
+
+ENV PORT $DEFAULT_PORT
+
+EXPOSE $PORT
+
+# VOLUME ["/app/node_modules"]
+
+CMD ["npm", "start"]
+```
+
+We can then set a default port via ARGs:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ docker build -t feedback:dev --build-arg DEFAULT_PORT=8000 .
+
+```
