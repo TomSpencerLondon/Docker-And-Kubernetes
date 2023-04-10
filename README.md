@@ -526,3 +526,5 @@ and the API.
 
 ### Container to LocalHost machine communication
 
+We might also want to communicate with our local host machine:
+![image](https://user-images.githubusercontent.com/27693622/230929504-ead24d66-25ae-4dc0-b3a6-6b43f80263c9.png)
