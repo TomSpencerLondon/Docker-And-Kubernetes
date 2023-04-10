@@ -386,3 +386,28 @@ docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "/home
 Here ```-v /app/node_modules``` ensures that the node_modules folder persists.
 
 
+### Volumes and bind mounts summary
+- docker run -v /app/data (anonymous volume)
+- docker run -v data:/app/data (named volume)
+- docker run -v /path/to/code:/app/code (bind mount)
+
+Anonymous volumes are created specifically for a container. They do not survive --rm and cannot be used to share across containers.
+Anonymous volumes are useful for locking in data which is already in a container and which you don't want to be overwritten.
+They still create a counterpart on the host machine.
+
+Named volumes are created by -v with name:/PATH. They are not tied to specific containers and survive shutdown and restart of the container.
+These can be used to share across containers and shutdowns and removals.
+
+Bind mounts are given a place to save data on the host machine. They also survive shutdown / restart of the docker container.
+
+You can also ensure that the container is not able to write files with ro:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker
+-And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/node_modules feedback:volume
+```
+This ensures that docker will not be able to write to folder and host files.
+
+You can delete all dangling volumes with:
+```bash
+    docker volume rm -f ${docker volume ls -f dangling=true -q}
+```
