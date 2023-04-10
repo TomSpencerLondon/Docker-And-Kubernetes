@@ -213,4 +213,176 @@ You can also push images that you have tagged:
 docker push tomspencerlondon/node-hello-world:1
 ```
 
+#### Managing Data and Working with Volumes
+
+We can store container data that we want to persist in volumes. 
+We have a node application and we will store data in temp and feedback:
+```javascript
+app.post('/create', async (req, res) => {
+  const title = req.body.title;
+  const content = req.body.text;
+
+  const adjTitle = title.toLowerCase();
+
+  const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
+  const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
+
+  await fs.writeFile(tempFilePath, content);
+  exists(finalFilePath, async (exists) => {
+    if (exists) {
+      res.redirect('/exists');
+    } else {
+      await fs.rename(tempFilePath, finalFilePath);
+      res.redirect('/');
+    }
+  });
+});
+```
+
+The temp folder stores files before copying to feedback. The temp file will be temporary storage. We will persist data in the
+feedback folder.
+
+We then add a Dockerfile:
+```dockerfile
+FROM node:14
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 80
+
+CMD ["node", "server.js"]
+```
+
+We build and run the app:
+```bash
+docker build -t feedback-node .
+docker run -p 3000:80 -d --name feedback-app --rm feedback-node
+```
+
+Files saved at the moment only exist in the running container.
+If we delete the container and run another container, the file no longer exists.
+However, if we start the original container again the data still exists.
+
+![image](https://user-images.githubusercontent.com/27693622/230774755-90fd19fd-a069-440d-ac7a-ab69ab2b8caa.png)
+
+We can use volumes to persist data between containers on the host machine which are mounted into containers.
+This creates a connection between the host machine folder and a folder in the container. Changes in either folder are
+reflected on the other folder. Volumes are persisted if a container shuts down. The volume will not be removed when a container is
+removed. Containers can read and write data to volumes.
+
+To save volumes we can add a line in our Dockerfile:
+```dockerfile
+FROM node:14
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 80
+
+VOLUME ["/app/feedback"]
+
+CMD ["node", "server.js"]
+```
+The ```VOLUME ["/app/feedback"]``` instruction assigns where we will listen for changes in the container to persist
+to our host files.
+
+We can now build and run the image:
+```bash
+docker build -t feedback-node:volumes .
+docker run -d -p 3000:80 --rm --name feedback-app feedback-node:volumes
+```
+
+We can view the logs with:
+```bash
+docker logs feedback-app
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+(node:1) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 2)
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 3)
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 4)
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 5)
+(node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
+(node:1) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 6)
+```
+
+We now change the source code:
+```javascript
+
+app.post('/create', async (req, res) => {
+  const title = req.body.title;
+  const content = req.body.text;
+
+  const adjTitle = title.toLowerCase();
+
+  const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
+  const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
+
+  await fs.writeFile(tempFilePath, content);
+  exists(finalFilePath, async (exists) => {
+    if (exists) {
+      res.redirect('/exists');
+    } else {
+      await fs.copyFile(tempFilePath, finalFilePath);
+      await fs.unlink(tempFilePath);
+      res.redirect('/');
+    }
+  });
+});
+
+app.listen(80);
+```
+
+We can now rebuild and run the image:
+```bash
+docker build -t feedback-node:volumes .
+docker run -d -p 3000:80 --rm --name feedback-app feedback-node:volumes
+```
+There are two types of external Data Storage: volumes (managed by docker) and bind mounts (managed by us).
+We can use named volumes to ensure that the volume persists after a docker container has been shut down:
+
+```bash
+docker run -d -p 3000:80 --rm --name feedback-app -v feedback:/app/feedback feedback-node:volumes
+```
+The named volume will not be deleted by Docker when the container is shut down. Named volumes are not attached to containers. The
+data is now persisted with the help of named volumes.
+
+### Bind Mounts
+Bind mounts can help us with changes in the source code so that they are reflected in the running container.
+Bind mounts are similar to volumes but the path is set on our internal machine where to keep the volumes.
+Bind mounts are great for persistent, editable data.
+
+There are also shortcuts for bind mounts:
+```bash
+$(pwd):/app
+```
+Windows:
+```bash
+"%cd%":/app
+```
+
+We also need an anonymous volume for storing node_modules:
+
+```bash
+docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup:/app" -v /app/node_modules feedback:volume
+```
+
+Here ```-v /app/node_modules``` ensures that the node_modules folder persists.
+
 
