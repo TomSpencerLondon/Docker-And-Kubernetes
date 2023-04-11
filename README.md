@@ -877,3 +877,5 @@ docker run --name favorites --rm -p 3000:3000 favorites-node
 ```
 This is not so convenient as we have to look up the ip address and then build a new image. There is an easier way
 to make multiple docker containers talk to each other. We can use Container networks:
+
+![image](https://user-images.githubusercontent.com/27693622/231094021-bb3c1f13-91fd-41e7-a4af-13580b4d68b1.png)
