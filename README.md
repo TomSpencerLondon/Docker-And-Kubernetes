@@ -528,3 +528,24 @@ and the API.
 
 We might also want to communicate with our local host machine:
 ![image](https://user-images.githubusercontent.com/27693622/230929504-ead24d66-25ae-4dc0-b3a6-6b43f80263c9.png)
+
+Here we are also connecting to our local Mongodb instance:
+```javascript
+mongoose.connect(
+  'mongodb://localhost:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+We are using this instance to store data. This means that we also need to allow a connection to localhost connection
+requests.
+
+### Container to Container
+Alongside connections to the web and the host containers may also need to connect to other containers.
+
