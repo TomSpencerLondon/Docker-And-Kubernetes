@@ -550,3 +550,32 @@ requests.
 Alongside connections to the web and the host containers may also need to connect to other containers.
 
 ![image](https://user-images.githubusercontent.com/27693622/231071713-3caf5bde-c469-41d2-8b33-ab544f79c482.png)
+
+Connecting to mongodb from our container fails:
+```bash
+docker run --name favorites --rm -p 3000:3000 favorites-node
+```
+The connection to the outside WWW works. Sending requests to the web works. The connection to the server on our localhost
+is not working.
+Instead of localhost we need to use host.docker.internal to communicate with the host:
+```javascript
+mongoose.connect(
+  'mongodb://host.docker.internal:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+
+This works out of the box with Apple mac but on Linux we need to add an extra configuration with our run command:
+```bash
+docker run --add-host=host.docker.internal:host-gateway --name favorites --rm -p 3000:3000 favorites-node
+```
+This article was quite useful:
+https://medium.com/@TimvanBaarsen/how-to-connect-to-the-docker-host-from-inside-a-docker-container-112b4c71bc66
+
