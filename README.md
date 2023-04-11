@@ -579,3 +579,4 @@ docker run --add-host=host.docker.internal:host-gateway --name favorites --rm -p
 This article was quite useful:
 https://medium.com/@TimvanBaarsen/how-to-connect-to-the-docker-host-from-inside-a-docker-container-112b4c71bc66
 
+![image](https://user-images.githubusercontent.com/27693622/231079512-15df9661-48f3-4fc7-a253-16364803d6f6.png)
