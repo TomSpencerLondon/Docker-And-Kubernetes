@@ -578,5 +578,302 @@ docker run --add-host=host.docker.internal:host-gateway --name favorites --rm -p
 ```
 This article was quite useful:
 https://medium.com/@TimvanBaarsen/how-to-connect-to-the-docker-host-from-inside-a-docker-container-112b4c71bc66
-
 ![image](https://user-images.githubusercontent.com/27693622/231079512-15df9661-48f3-4fc7-a253-16364803d6f6.png)
+
+To kill my linux mongo process I use:
+```bash
+ps -edaf | grep mongo | grep -v grep
+root      577139       1  0 Apr10 ?        00:05:32 /snap/mongo44-configurable/30/usr/bin/mongod -f ./mongodb.conf
+
+tom@tom-ubuntu:~$ kill 577139
+
+```
+
+To restart I would use:
+```bash
+tom@tom-ubuntu:~$ systemctl start mongodb.service
+tom@tom-ubuntu:~$ mongosh
+```
+
+#### Container to Container Communication
+We can now set up our own mongodb container:
+```bash
+docker run -d --name mongodb mongo
+```
+
+We can run docker inspect on this container:
+```bash
+ docker container inspect mongodb
+```
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/assignment-problem/python-app$ docker container inspect mongodb
+[
+    {
+        "Id": "cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7",
+        "Created": "2023-04-11T07:41:20.702642664Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "mongod"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 636701,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2023-04-11T07:41:21.106385264Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:9a5e0d0cf6dea27fa96b889dc4687c317f3ff99f582083f2503433d534dfbba3",
+        "ResolvConfPath": "/var/lib/docker/containers/cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7/hostname",
+        "HostsPath": "/var/lib/docker/containers/cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7/hosts",
+        "LogPath": "/var/lib/docker/containers/cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7/cc158e92f413a5204b88c9fa3f91f7b64520bbde78981a896c69aed886b6daf7-json.log",
+        "Name": "/mongodb",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "docker-default",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "default",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                7,
+                186
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": [],
+            "BlkioDeviceWriteBps": [],
+            "BlkioDeviceReadIOps": [],
+            "BlkioDeviceWriteIOps": [],
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/37ae49740da59c46330f65cca2bae421464a26b8149adf7f377dd7488a7725ff-init/diff:/var/lib/docker/overlay2/21c94ca3a37970ed208ff53802d06212df8997b49d97ad95393b103e9dc62225/diff:/var/lib/docker/overlay2/57d06f65a5a31ad60116a2e756c782adaf8eca7e753df94529c3b674d97b0bed/diff:/var/lib/docker/overlay2/299904a31b191907fbbefdf6b8ac3063678c1c87d4bb8bb1ca47f2b4fa30b66d/diff:/var/lib/docker/overlay2/57bfb3af2467e04434bca071b9482316ce953ed386d24fdb41e937518f8df927/diff:/var/lib/docker/overlay2/f071b2453b15ec3a8563843a1752232e79e8382b6e6a0805889cc4de0a929812/diff:/var/lib/docker/overlay2/bbee005e09c5651edf804327e684b7417d1edded8871e387872fa2372548f73e/diff:/var/lib/docker/overlay2/0a2aa49b363b51c8f2c6407e0b7b8247693cb6ea1328356d472a6e2680ccebf8/diff:/var/lib/docker/overlay2/4b860531fedfe9b4dc9739a8ac9c596e2427738945e3977e0ca130b33a12c293/diff:/var/lib/docker/overlay2/91356fe1ada980294315d2a034870673e4da948007658ab79986640b787b6338/diff",
+                "MergedDir": "/var/lib/docker/overlay2/37ae49740da59c46330f65cca2bae421464a26b8149adf7f377dd7488a7725ff/merged",
+                "UpperDir": "/var/lib/docker/overlay2/37ae49740da59c46330f65cca2bae421464a26b8149adf7f377dd7488a7725ff/diff",
+                "WorkDir": "/var/lib/docker/overlay2/37ae49740da59c46330f65cca2bae421464a26b8149adf7f377dd7488a7725ff/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "d3896d83f9b430ebf3c5797c87253b11b17fdebd5b0d62f6570403b4f7a6e0ee",
+                "Source": "/var/lib/docker/volumes/d3896d83f9b430ebf3c5797c87253b11b17fdebd5b0d62f6570403b4f7a6e0ee/_data",
+                "Destination": "/data/configdb",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "9de44e9d37f1dc834d08c287d12373488d979ffce405317004110d9b51760adb",
+                "Source": "/var/lib/docker/volumes/9de44e9d37f1dc834d08c287d12373488d979ffce405317004110d9b51760adb/_data",
+                "Destination": "/data/db",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "cc158e92f413",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "ExposedPorts": {
+                "27017/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOSU_VERSION=1.16",
+                "JSYAML_VERSION=3.13.1",
+                "MONGO_PACKAGE=mongodb-org",
+                "MONGO_REPO=repo.mongodb.org",
+                "MONGO_MAJOR=6.0",
+                "MONGO_VERSION=6.0.5",
+                "HOME=/data/db"
+            ],
+            "Cmd": [
+                "mongod"
+            ],
+            "Image": "mongo",
+            "Volumes": {
+                "/data/configdb": {},
+                "/data/db": {}
+            },
+            "WorkingDir": "",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "org.opencontainers.image.ref.name": "ubuntu",
+                "org.opencontainers.image.version": "22.04"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "441a40d9de862616860771749efc5fb5e9d042d9534078be75d5bcc9c3abb8b4",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "27017/tcp": null
+            },
+            "SandboxKey": "/var/run/docker/netns/441a40d9de86",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "37eb934ae50f4196699052c8d0b6ce06c3c2c9f2fcb91bac045d4ac58a26f5c1",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.2",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:02",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "136c829bf8aca834b3f7d5f2818c907b41ca2da2acfff2e7a05a8f61536804ca",
+                    "EndpointID": "37eb934ae50f4196699052c8d0b6ce06c3c2c9f2fcb91bac045d4ac58a26f5c1",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+
+```
+
+we can see the ip address:
+```bash
+"IPAddress": "172.17.0.2"
+```
+
+we can then use this address to connect to the mongodb container:
+```javascript
+mongoose.connect(
+  'mongodb://172.17.0.2:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+We then rebuild the image:
+
+```bash
+docker build -t favorites-node .
+```
+and run the container:
+```bash
+docker run --name favorites --rm -p 3000:3000 favorites-node
+```
+This is not so convenient as we have to look up the ip address and then build a new image. There is an easier way
+to make multiple docker containers talk to each other. We can use Container networks:
