@@ -879,3 +879,63 @@ This is not so convenient as we have to look up the ip address and then build a 
 to make multiple docker containers talk to each other. We can use Container networks:
 
 ![image](https://user-images.githubusercontent.com/27693622/231094021-bb3c1f13-91fd-41e7-a4af-13580b4d68b1.png)
+
+We create a network:
+
+```bash
+docker network create favorites-net
+```
+We can now run the mongodb database container and connect to the network:
+```bash
+ docker run -d --name mongodb --network favorites-net mongo
+```
+
+We can now use the container name to connect to the mongodb container from our node application:
+```bash
+mongoose.connect(
+  'mongodb://mongodb:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+
+We can now run the node application to connect to the same network:
+```bash
+docker run --name favorites --network favorites-net -d --rm -p 3000:3000 favorites
+```
+
+We can now post and get the favorite films from the node app:
+![image](https://user-images.githubusercontent.com/27693622/232021829-0e96c1b6-b35a-4046-a36a-3fb44414edc0.png)
+
+![image](https://user-images.githubusercontent.com/27693622/232021946-90f7e179-7299-40c4-8780-ee28cb84f54a.png)
+
+This proves that the two containers can communicate using the built in network feature:
+![image](https://user-images.githubusercontent.com/27693622/231079512-15df9661-48f3-4fc7-a253-16364803d6f6.png)
+
+The containers can only talk to each other with a shared network. When we use a shared network it means that we don't
+have to expose IP addresses because the containers can communicate on the shared network.
+
+### Docker Network IP Resolving
+we can use host.docker.internal to target the host machine and when we have containers in the same network
+we can use the name of the container to direct traffic. Docker does not replace the sort code it simply
+detects outgoing requests and resolves the IP for the requests. If a request is using the web or addresses within the
+container docker doesn't need to do anything.
+
+### Building Multi-container applications
+We will now combine multiple services to one application and work with multiple containers.
+
+![image](https://user-images.githubusercontent.com/27693622/232026077-6461260e-4a64-406e-a524-30ca12d8ed48.png)
+
+The above is a common setup for a web application which includes a backend database with a front end application which brings
+html to the screen and the frontend talks to the backend.
+
+
+
+
+
