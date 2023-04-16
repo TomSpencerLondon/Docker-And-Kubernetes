@@ -939,7 +939,15 @@ Next we stop our local mongo server:
 ```bash
 systemctl stop mongodb.service
 ```
-The above is the command for linux ubuntu
+The above is the command for linux ubuntu. We then test that mongo is no longer running locally:
+```bash
+> mongosh
+Current Mongosh Log ID: 643bb8f18cb210ce64ba9eb6
+Connecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.8.0
+MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017
+```
+
+
 
 
 
