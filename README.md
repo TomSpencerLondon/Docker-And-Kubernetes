@@ -935,7 +935,11 @@ We will now combine multiple services to one application and work with multiple 
 The above is a common setup for a web application which includes a backend database with a front end application which brings
 html to the screen and the frontend talks to the backend.
 
-
+Next we stop our local mongo server:
+```bash
+systemctl stop mongodb.service
+```
+The above is the command for linux ubuntu
 
 
 
