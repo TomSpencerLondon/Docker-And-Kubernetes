@@ -1191,3 +1191,6 @@ We now add a named volume for the logs for the backend and add a mount for our c
 We have also added nodemon and changed the command in the Dockerfile backend to npm start.
 
 
+### Docker Compose: Elegant Multi-Container Orchestration
+
+
