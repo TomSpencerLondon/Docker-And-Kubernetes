@@ -1193,4 +1193,5 @@ We have also added nodemon and changed the command in the Dockerfile backend to 
 
 ### Docker Compose: Elegant Multi-Container Orchestration
 
-
+Docker compose replaces docker build and docker run commands with one configuration file and a set of
+orchestration commands to start all images at once.
