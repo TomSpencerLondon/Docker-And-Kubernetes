@@ -947,8 +947,247 @@ Connecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverS
 MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017
 ```
 
+We then run the mongo container:
+```bash
+docker run --name mongodb --rm -d -p 27017:27017 mongo
+```
 
+I can see the container running:
+```bash
+ docker ps
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                                  NAMES
+920dd45443b3   mongo          "docker-entrypoint.s…"   8 seconds ago   Up 5 seconds   0.0.0.0:27017->27017/tcp, :::27017->27017/tcp          mongodb
+```
 
+We then run the multi-01-starting-setup backend:
+```dockerfile
+FROM node
 
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3001
+
+CMD ["node", "app.js"]
+```
+
+We then build the backend image:
+```bash
+docker build -t goals-node .
+```
+
+This fails to connect to mongodb. In the dockerised backend app we are still reaching for localhost.
+
+We add the ip for localhost for docker:
+```javascript
+mongoose.connect(
+        'mongodb://host.docker.internal:27017/course-goals',
+        {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+        },
+        (err) => {
+          if (err) {
+            console.error('FAILED TO CONNECT TO MONGODB');
+            console.error(err);
+          } else {
+            console.log('CONNECTED TO MONGODB');
+            app.listen(3001);
+          }
+        }
+);
+```
+We should also remove our docker cache:
+```bash
+docker system prune -a
+```
+We then rebuild the image:
+```bash
+docker build -t goals-node .
+```
+We then rerun the container:
+```bash
+docker run --name goals-backend --add-host=host.docker.internal:host-gateway --rm goals-node
+```
+When running with linux we have to add:
+```bash
+--add-host=host.docker.internal:host-gateway
+```
+to expose host.docker.internal.
+
+The front end still fails to connect to the docker backend:
+![image](https://user-images.githubusercontent.com/27693622/232289778-6662bf24-daee-49eb-ba4e-aaaeec9461df.png)
+
+We still have to expose the port:
+```bash
+ docker run --name goals-backend --add-host=host.docker.internal:host-gateway --rm -d -p 3001:3001 goals-node
+```
+
+We can now connect the front end:
+```bash
+npm run start
+
+> docker-frontend@0.1.0 start
+> react-scripts --openssl-legacy-provider start
+
+(node:70396) [DEP0111] DeprecationWarning: Access to process.binding('http_parser') is deprecated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Starting the development server...
+Compiled successfully!
+
+You can now view docker-frontend in the browser.
+
+  Local:            http://localhost:3000/
+  On Your Network:  http://192.168.1.116:3000/
+
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+```
+And the error is gone:
+![image](https://user-images.githubusercontent.com/27693622/232289864-f038f2bd-155b-4338-9fac-fa68bd4a7654.png)
+
+We now want to setup the frontend on docker:
+
+```dockerfile
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
+```
+
+We then build the application:
+```bash
+docker build -t goals-react .
+```
+
+and run the container:
+
+```bash
+ docker run --name goals-front-end --rm -d -p 3000:3000 -it goals-react
+```
+
+For react applications we have to add -it.
+
+We have now added all building blocks to their own containers. 
+
+We now want to put all the docker containers on the same network:
+```bash
+
+docker network create goals-net
+```
+
+We start the mongodb database with the above network:
+```bash
+docker run --name mongodb --rm -d --network goals-net mongo
+```
+
+and run the backend on the same network. We change the connection url to refer to the running
+mongodb docker container:
+```javascript
+mongoose.connect(
+  'mongodb://mongodb:27017/course-goals',
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  },
+  (err) => {
+    if (err) {
+      console.error('FAILED TO CONNECT TO MONGODB');
+      console.error(err);
+    } else {
+      console.log('CONNECTED TO MONGODB');
+      app.listen(3001);
+    }
+  }
+);
+
+```
+We then rebuild the image:
+```bash
+docker build -t goals-node .
+```
+and run docker with the correct network:
+```bash
+docker run --name goals-backend --rm -d --network goals-net goals-node
+```
+
+We then build the frontend image:
+```bash
+docker build -t goals-react .
+```
+
+We run the react container:
+```bash
+docker run --name goals-frontend --network goals-net --rm -p 3000:3000 -it goals-react
+```
+We still get an error:
+![image](https://user-images.githubusercontent.com/27693622/232322276-325f0512-12ac-41e7-8d4a-4aa21e5de0ba.png)
+
+The code is running App.js in the browser not on the server. We can't use the container names.
+
+We don't use the network and change the endpoints to localhost:
+```bash
+docker run --name goals-frontend --rm -p 3000:3000 -it goals-react
+```
+We now have to stop the goals-backend container. We then restart the backend with port 3001 exposed:
+
+```bash
+docker run --name goals-backend --rm -d -p 3001:3001 --network goals-net --rm goals-node
+```
+Everything is now working. We now have more to add:
+
+![image](https://user-images.githubusercontent.com/27693622/232322758-601ef40a-9b89-460e-99cc-05a086dbc269.png)
+
+We now want to persist data on mongodb and limit the access. This is how we persist data to a named volume:
+```bash
+docker run --name mongodb --rm -d -v data:/data/db --network goals-net mongo
+```
+The data now perists if I stop the docker container.
+
+We can now add username and password:
+```bash
+docker run --name mongodb --rm -d -v data:/data/db --network goals-net -e MONGO_INITDB_ROOT_USERNAME=tom -e MONGO_INITDB_ROOT_PASSWORD=secret  mongo
+```
+We now need to add the username and password to our mongodb connection string:
+
+```javascript
+
+mongoose.connect(
+  'mongodb://tom:secret@mongodb:27017/course-goals?authSource=admin',
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  },
+  (err) => {
+    if (err) {
+      console.error('FAILED TO CONNECT TO MONGODB');
+      console.error(err);
+    } else {
+      console.log('CONNECTED TO MONGODB');
+      app.listen(3001);
+    }
+  }
+);
+```
+
+We now add a named volume for the logs for the backend and add a mount for our code base and the app folder on the container and an anonymous volume for our node modules:
+```bash
+ docker run --name goals-backend -v logs:/app/logs -v /home/tom/Projects/Docker-And-Kubernetes/multi-01-starting-setup/backend:/app -v /app/node_modules --rm -p 3001:3001 --network goals-net goals-node
+ ```
+We have also added nodemon and changed the command in the Dockerfile backend to npm start.
 
 
