@@ -1195,3 +1195,75 @@ We have also added nodemon and changed the command in the Dockerfile backend to 
 
 Docker compose replaces docker build and docker run commands with one configuration file and a set of
 orchestration commands to start all images at once.
+
+![image](https://user-images.githubusercontent.com/27693622/232341221-e46c2024-e507-48aa-bfd2-d7a6aaa77b29.png)
+
+The versions of docker-compose are listed here:
+https://docs.docker.com/compose/compose-file/compose-file-v3/
+
+We can now start the docker images with:
+```yaml
+version: "3.8"
+services:
+  mongodb:
+    image: 'mongo'
+    volumes:
+      - data:/data/db
+    env_file:
+      - ./env/mongo.env
+#  backend:
+#    image:
+#
+#  frontend:
+volumes:
+  data:
+```
+
+and run the file with:
+```bash
+docker-compose up
+```
+
+We can delete the images, containers and volumes with:
+```bash
+docker-compose down -v
+```
+
+This is the docker-compose file with all the services:
+```yml
+
+version: "3.8"
+services:
+  mongodb:
+    image: 'mongo'
+    volumes:
+      - data:/data/db
+    env_file:
+      - ./env/mongo.env
+  backend:
+    build: ./backend
+    ports:
+      - '3001:3001'
+    volumes:
+      - logs:/app/logs
+      - ./backend:/app
+      - /app/node_modules
+    env_file:
+      - ./env/backend.env
+    depends_on:
+      - mongodb
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend/src:/app/src
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+volumes:
+  data:
+  logs:
+```
