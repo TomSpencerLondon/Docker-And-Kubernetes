@@ -1267,3 +1267,11 @@ volumes:
   data:
   logs:
 ```
+
+### Working with "Utility Containers" and executing commands in Containers
+![image](https://user-images.githubusercontent.com/27693622/232348989-19ada890-b2a8-47a4-9aeb-8fb2feb58b70.png)
+
+We can use the utility containers for creating our environment:
+```bash
+docker run -it -v /home/tom/Projects/Docker-And-Kubernetes/utility-containers:/app node-util npm init
+```
