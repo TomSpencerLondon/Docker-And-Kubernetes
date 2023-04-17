@@ -1271,7 +1271,40 @@ volumes:
 ### Working with "Utility Containers" and executing commands in Containers
 ![image](https://user-images.githubusercontent.com/27693622/232348989-19ada890-b2a8-47a4-9aeb-8fb2feb58b70.png)
 
+We build the dockerfile:
+```dockerfile
+FROM node:14-alpine
+
+WORKDIR /app
+```
+with:
+```bash
+docker build -t node-util .
+```
+
 We can use the utility containers for creating our environment:
 ```bash
 docker run -it -v /home/tom/Projects/Docker-And-Kubernetes/utility-containers:/app node-util npm init
+```
+
+we can use the utility container to install express:
+```bash
+docker run -it -v /home/tom/Projects/Docker-And-Kubernetes/utility-containers:/app my-npm install express --save
+```
+
+This is quite long so we can use docker-compose:
+```yaml
+version: "3.8"
+services:
+  npm:
+    build: ./
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./:/app
+```
+
+We run the file with:
+```bash
+docker-compose run npm init
 ```
