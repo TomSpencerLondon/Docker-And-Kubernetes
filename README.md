@@ -1314,4 +1314,88 @@ We will now practice a more complex container setup with Laravel and PHP.
 
 ![image](https://user-images.githubusercontent.com/27693622/232719934-3e2442b8-da24-47ca-a4e4-0398f95496ca.png)
 
+We first add nginx:
+```yaml
+version: "3.8"
+
+services:
+  server:
+    image: 'nginx:stable-alpine'
+    ports:
+      - '8000:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+```
+and the configuration for the nginx.conf file:
+```nginx configuration
+server {
+    listen 80;
+    index index.php index.html;
+    server_name localhost;
+    root /var/www/html/public;
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass php:3000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+}
+```
+
+We then add our php Dockerfile:
+```dockerfile
+FROM php:7.4-fpm-alpine
+
+WORKDIR /var/www/html
+
+RUN docker-php-ext-install pdo pdo_mysql
+```
+The base php image invokes the interpreter for our layered php image. We can now add composer to our docker-compose file:
+```yaml
+version: "3.8"
+
+services:
+  server:
+    image: 'nginx:stable-alpine'
+    ports:
+      - '8000:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  php:
+    build:
+      context: ./dockerfiles
+      dockerfile: php.Dockerfile
+    volumes:
+      - ./src:/var/www/html:delegated
+  mysql:
+    image: 'mysql:5.7'
+    env_file:
+      - ./env/mysql.env
+  composer:
+    build:
+      context: ./dockerfiles
+      dockerfile: composer.Dockerfile
+    volumes:
+      - ./src:/var/www/html
+```
+
+We then set up the laravel project:
+```bash
+docker-compose run --rm composer create-project --prefer-dist laravel/laravel .
+```
+
+and run the relevant services with:
+
+```bash
+docker-compose up server php mysql
+```
+
+We now have a running laravel page:
+![image](https://user-images.githubusercontent.com/27693622/232803104-f62ca2d5-508c-479d-ab64-45c62bc00066.png)
 
