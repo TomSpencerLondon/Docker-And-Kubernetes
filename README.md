@@ -1308,3 +1308,10 @@ We run the file with:
 ```bash
 docker-compose run npm init
 ```
+
+### More complex Dockerized Project
+We will now practice a more complex container setup with Laravel and PHP.
+
+![image](https://user-images.githubusercontent.com/27693622/232719934-3e2442b8-da24-47ca-a4e4-0398f95496ca.png)
+
+
