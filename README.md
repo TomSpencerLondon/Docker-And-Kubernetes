@@ -1399,3 +1399,8 @@ docker-compose up server php mysql
 We now have a running laravel page:
 ![image](https://user-images.githubusercontent.com/27693622/232803104-f62ca2d5-508c-479d-ab64-45c62bc00066.png)
 
+We can also make server depend on mysql and php and then ensure that the docker-compose uses the latest images with --build:
+```bash
+docker-compose up -d --build server
+```
+
