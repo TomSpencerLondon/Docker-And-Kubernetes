@@ -1370,7 +1370,7 @@ services:
   php:
     build:
       context: ./dockerfiles
-      dockerfile: php.Dockerfile
+      dockerfile: php.dockerfile
     volumes:
       - ./src:/var/www/html:delegated
   mysql:
@@ -1380,7 +1380,7 @@ services:
   composer:
     build:
       context: ./dockerfiles
-      dockerfile: composer.Dockerfile
+      dockerfile: composer.dockerfile
     volumes:
       - ./src:/var/www/html
 ```
