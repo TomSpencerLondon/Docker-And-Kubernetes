@@ -1433,5 +1433,27 @@ AWS EC2 is a service that allows us to spin up and manage our own remote machine
 2. Configure security group to expose all required ports to www
 3. Connect to instance (SSH), install Docker and run container
 
+### Commands to open port 80 and port 443:
+I saw these commands for opening port 80 and port 443 on ubuntu:
+```bash
+tom@tom-ubuntu:~$ sudo ufw allow http
+[sudo] password for tom:
+Rules updated
+Rules updated (v6)
+tom@tom-ubuntu:~$ sudo ufw allow https
+Rules updated
+Rules updated (v6)
+```
+I then build the docker image and run the container:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-dep-example .
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker run -d --rm --name node-dep -p 80:80 node-dep-example
+f7c9d35545fb0a0c28f5077b271b8669b9a8c2a829a0e6d230e021610a9a0a03
+```
+
+![image](https://user-images.githubusercontent.com/27693622/233949979-6687249c-f4ec-4215-9f6d-603c4dbb8f25.png)
+
+
+
 
 
