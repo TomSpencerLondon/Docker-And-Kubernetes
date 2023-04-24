@@ -1694,5 +1694,7 @@ and scaling is simplified. This is great if we simply want to deploy our app / c
 also less responsibility. We now use a service provided by a cloud provider and we have to follow the rules of the service.
 Running containers is no longer our responsibility but we use the tools of the cloud provider for the service we want to use.
 
-
+NB: We really should double-check to remove ALL created resources (e.g. load balancers, NAT gateways etc.) once we're done - otherwise, monthly costs can be much higher!
+The AWS pricing page is quite useful for costs:
+https://aws.amazon.com/pricing/
 
