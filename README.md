@@ -1668,7 +1668,31 @@ We then run the image:
 We can then see the change we made:
 ![image](https://user-images.githubusercontent.com/27693622/233966400-036eb58f-6058-4081-8240-30e23f75a7f1.png)
 
+#### Docker is awesome!
+- only docker needs to be installed (no other runtimes or tools)
+- uploading our code is easy
+- the image is the exact same app and environment as on our machine
 
+#### "Do it your self" approach - Disadvantages
+- we fully own the remote machine - we are responsible for it (and its security)
+- we ensure all the system software stays updated
+- we have to manage the network and security groups / firewall
+- it is easy to set up an insecure instance
+- SSHing into the machine to manage it can be annoying
+
+We might want to be able to run commands on a local machine to deploy the image.
+
+#### From manual deployment to managed services
+We may want less control so that we have less responsibility.
+Instead of running our own EC2 instance we might want a managed service. For the ec2 instance we need to
+create the instance, manage it, keep it updated, monitor it and scale the instances. If we have the admin/cloud expert
+knowledge this is great.
+
+We might go for a managed remote machine. Here AWS ECS can help us. ECS stands for Elastic Container Service.
+It will help us with management, monitoring and scaling. The advantage is that the creation, management, updating, monitoring
+and scaling is simplified. This is great if we simply want to deploy our app / containers. We therefore have less control but
+also less responsibility. We now use a service provided by a cloud provider and we have to follow the rules of the service.
+Running containers is no longer our responsibility but we use the tools of the cloud provider for the service we want to use.
 
 
 
