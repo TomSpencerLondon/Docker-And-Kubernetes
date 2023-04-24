@@ -1453,6 +1453,221 @@ f7c9d35545fb0a0c28f5077b271b8669b9a8c2a829a0e6d230e021610a9a0a03
 
 ![image](https://user-images.githubusercontent.com/27693622/233949979-6687249c-f4ec-4215-9f6d-603c4dbb8f25.png)
 
+### Bind mounts, volumes & COPY
+In development the container should encapsulate the runtime environment but not necessarily the code.
+We can use "Bind Mounts" to provide our local host project files to the running container. This allows for instant
+updates without restarting the container.
+In production the container should really work standalone, and we should not have source code on our remote machine.
+This image / container is the "single source of truth". There should be nothing around the container on the hosting machine.
+When we build for production we use COPY instead of bind mounts to copy a code snapshot into the image. This ensures that every
+image runs without any extra, surrounding configuration or code.
+
+### Install docker on ec2
+We have started an ec2 instance and connected to the instance. This tutorial is quite useful for connecting to ec2:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html
+
+These are the commands for installing docker on ubuntu:
+```bash
+sudo yum update -y
+sudo yum -y install docker
+ 
+sudo service docker start
+ 
+sudo usermod -a -G docker ec2-user
+```
+We then log out and back in after running the commands. Once we are logged back in we can run the following commands:
+```bash
+sudo systemctl enable docker
+```
+For me on my ec2 instance docker version shows:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker version
+Client:
+ Version:           20.10.17
+ API version:       1.41
+ Go version:        go1.19.3
+ Git commit:        100c701
+ Built:             Mon Mar 13 22:41:42 2023
+ OS/Arch:           linux/amd64
+ Context:           default
+ Experimental:      true
+
+Server:
+ Engine:
+  Version:          20.10.17
+  API version:      1.41 (minimum version 1.12)
+  Go version:       go1.19.3
+  Git commit:       a89b842
+  Built:            Mon Mar 13 00:00:00 2023
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          1.6.19
+  GitCommit:        1e1ea6e986c6c86565bc33d52e34b81b3e2bc71f
+ runc:
+  Version:          1.1.4
+  GitCommit:        5fd4c4d144137e991c4acebb2146ab1483a97925
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+```
+
+This stack overflow post was useful for installing docker on ec2:
+https://stackoverflow.com/questions/53918841/how-to-install-docker-on-amazon-linux2/61708497#61708497
+
+This is what shows for docker ps, docker images and docker ps -a:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+[ec2-user@ip-172-31-14-37 ~]$ docker images
+REPOSITORY   TAG       IMAGE ID   CREATED   SIZE
+[ec2-user@ip-172-31-14-37 ~]$ docker ps -a
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
+
+This link has general instructions for installing docker engine:
+https://docs.docker.com/engine/install/
+
+### Pushing our local image to the code:
+There are two options here:
+1. Deploy source
+- build image on remote machine
+- push source code to remote machine, run docker build and docker run
+- this is a bit overly complex
+2. Deploy built image
+- build image before deployment (e.g. on local machine)
+- Just execute docker run
+
+We are going to deploy our image to dockerhub for now. First we will log into dockerhub locally:
+```bash
+tom@tom-ubuntu:~$ docker login
+Authenticating with existing credentials...
+WARNING! Your password will be stored unencrypted in /home/tom/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+```
+We then create a repository on docker hub:
+![image](https://user-images.githubusercontent.com/27693622/233958315-a1e20135-1e27-42f9-b09a-464b03bc0b12.png)
+
+We then add a .dockerignore file to our project:
+```bash
+node_modules
+Dockerfile
+```
+This avoids adding unecessary files. Next we build the image:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-dep-example-1 .
+```
+We then tag our image for pushing to docker hub:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker tag node-dep-example-1 tomspencerlondon/node-example-1
+```
+
+We then push the image to docker hub:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push tomspencerlondon/node-example-1
+Using default tag: latest
+The push refers to repository [docker.io/tomspencerlondon/node-example-1]
+9d59a013007b: Pushed 
+2972d38db3fa: Pushed 
+8fecd54a1233: Pushed 
+4f52e9ae1242: Pushed 
+31f710dc178f: Mounted from library/node 
+a599bf3e59b8: Mounted from library/node 
+e67e8085abae: Mounted from library/node 
+f1417ff83b31: Mounted from library/php 
+latest: digest: sha256:a1924592ca810836bbf78f9e2bd2a0f83848d1f8ecbfe18f8b0224f0319ac491 size: 1990
+```
+Now we can run the image on our remote machine:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker run -d --rm -p 80:80 tomspencerlondon/node-example-1
+Unable to find image 'tomspencerlondon/node-example-1:latest' locally
+latest: Pulling from tomspencerlondon/node-example-1
+f56be85fc22e: Pull complete 
+8f665685b215: Pull complete 
+e5fca6c395a6: Pull complete 
+561cb69653d5: Pull complete 
+aa19ccf4c885: Pull complete 
+06bc5b182177: Pull complete 
+86c3c7ad1831: Pull complete 
+4b21eb2ee505: Pull complete 
+Digest: sha256:a1924592ca810836bbf78f9e2bd2a0f83848d1f8ecbfe18f8b0224f0319ac491
+Status: Downloaded newer image for tomspencerlondon/node-example-1:latest
+fbe136f3958a0a9b6f258064625d8968b73ca52da9cce4e3278141912e024463
+```
+
+We can then check the container is running:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker ps
+CONTAINER ID   IMAGE                             COMMAND                  CREATED          STATUS          PORTS                               NAMES
+fbe136f3958a   tomspencerlondon/node-example-1   "docker-entrypoint.s…"   34 seconds ago   Up 32 seconds   0.0.0.0:80->80/tcp, :::80->80/tcp   happy_lamport
+```
+
+We can also access the site:
+![image](https://user-images.githubusercontent.com/27693622/233960782-2df87a02-d64b-4200-8b66-eee57dbb37c3.png)
+
+If we want to make changes to our application we can make the change and rebuild the image:
+```bash
+ docker build -t node-dep-example-1 .
+```
+
+We then tag the image:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker tag node-dep-example-1 tomspencerlondon/node-example-1
+```
+and then push the image to docker hub:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push tomspencerlondon/node-example-1
+Using default tag: latest
+The push refers to repository [docker.io/tomspencerlondon/node-example-1]
+b655b01209f7: Pushed 
+2972d38db3fa: Layer already exists 
+8fecd54a1233: Layer already exists 
+4f52e9ae1242: Layer already exists 
+31f710dc178f: Layer already exists 
+a599bf3e59b8: Layer already exists 
+e67e8085abae: Layer already exists 
+f1417ff83b31: Layer already exists 
+latest: digest: sha256:eb1a6659d93be31f9103739709dbe27806ed70d75b8159586074ee5dcf2f9644 size: 1990
+```
+We then stop the running container on the ec2 instance:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker ps
+CONTAINER ID   IMAGE                             COMMAND                  CREATED          STATUS          PORTS                               NAMES
+fbe136f3958a   tomspencerlondon/node-example-1   "docker-entrypoint.s…"   34 seconds ago   Up 32 seconds   0.0.0.0:80->80/tcp, :::80->80/tcp   happy_lamport
+[ec2-user@ip-172-31-14-37 ~]$ docker ps
+CONTAINER ID   IMAGE                             COMMAND                  CREATED          STATUS          PORTS                               NAMES
+fbe136f3958a   tomspencerlondon/node-example-1   "docker-entrypoint.s…"   22 minutes ago   Up 22 minutes   0.0.0.0:80->80/tcp, :::80->80/tcp   happy_lamport
+[ec2-user@ip-172-31-14-37 ~]$ docker stop fbe
+fbe
+```
+We then pull our image from docker hub:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker pull tomspencerlondon/node-example-1
+Using default tag: latest
+latest: Pulling from tomspencerlondon/node-example-1
+f56be85fc22e: Already exists 
+8f665685b215: Already exists 
+e5fca6c395a6: Already exists 
+561cb69653d5: Already exists 
+aa19ccf4c885: Already exists 
+06bc5b182177: Already exists 
+86c3c7ad1831: Already exists 
+94e37dedf8d5: Pull complete 
+Digest: sha256:eb1a6659d93be31f9103739709dbe27806ed70d75b8159586074ee5dcf2f9644
+Status: Downloaded newer image for tomspencerlondon/node-example-1:latest
+docker.io/tomspencerlondon/node-example-1:latest
+```
+We then run the image:
+```bash
+[ec2-user@ip-172-31-14-37 ~]$ docker run -d --rm -p 80:80 tomspencerlondon/node-example-1
+4ab3476b1d8a7e3dbe2d55558dca4cbc3f4500de32049757c31831e1100c9c76
+```
+We can then see the change we made:
+![image](https://user-images.githubusercontent.com/27693622/233966400-036eb58f-6058-4081-8240-30e23f75a7f1.png)
+
 
 
 
