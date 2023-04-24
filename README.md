@@ -1404,3 +1404,34 @@ We can also make server depend on mysql and php and then ensure that the docker-
 docker-compose up -d --build server
 ```
 
+### Deploying Docker Containers
+We will now deploy our docker containers to a remote server. We will learn about the deployment overview and general process.
+We will also look at concrete deployment scenarios, examples and problems. We will look at the manual and managed approaches.
+We will AWS as our cloud provider. 
+
+#### Containers
+- standardized unit for shipping
+- they are independent of other containers
+- we want the same environment for development, testing and production so that the application works the same way in all environments
+- We benefit from the isolated standalone environment in development and production
+- we have reproducible environments that are easy to share and use
+- there are no surpises - what works on a local machine also works in production
+
+#### Difference between production and development
+- bind mounts shouldn't be used in production
+- containerized apps might need a build step (e.g. React apps)
+- multi-container projects might need to be split across multiple hosts / remote machines
+- trade-offs between control and responsibility might be worth it
+
+#### Deployment Process and Providers
+We will start with a NodeJS environment with no database and nothing else. A possible deployment process is:
+- Install docker on a remote host (e.g. via SSH), push and pull image and run container based on image on remote host
+
+#### Deploy to AWS EC2
+AWS EC2 is a service that allows us to spin up and manage our own remote machines.
+1. Create and launch an EC2 instance, VPC and security group
+2. Configure security group to expose all required ports to www
+3. Connect to instance (SSH), install Docker and run container
+
+
+
