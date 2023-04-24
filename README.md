@@ -1698,3 +1698,86 @@ NB: We really should double-check to remove ALL created resources (e.g. load bal
 The AWS pricing page is quite useful for costs:
 https://aws.amazon.com/pricing/
 
+### Deploying with AWS ECS
+
+![image](https://user-images.githubusercontent.com/27693622/233976615-9a8cf529-cc49-4d7e-96cf-d597827dff44.png)
+
+This video is quite good for setting up ECS Fargate and deploying the docker image to AWS:
+https://www.youtube.com/watch?v=4D6Wy1R-FlU
+
+First I will push my image to Elastic Container Registry (ECR). I will need to login to ECR:
+```bash
+aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 706054169063.dkr.ecr.eu-west-2.amazonaws.com
+```
+I will then build the image and tag it for pushing to ECR:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-example .
+[+] Building 0.9s (11/11) FINISHED                                                                       
+ => [internal] load .dockerignore                                                                   0.0s
+ => => transferring context: 63B                                                                    0.0s
+ => [internal] load build definition from Dockerfile                                                0.0s
+ => => transferring dockerfile: 153B                                                                0.0s
+ => [internal] load metadata for docker.io/library/node:14-alpine                                   0.8s
+ => [auth] library/node:pull token for registry-1.docker.io                                         0.0s
+ => [1/5] FROM docker.io/library/node:14-alpine@sha256:434215b487a329c9e867202ff89e704d3a75e554822  0.0s
+ => [internal] load build context                                                                   0.0s
+ => => transferring context: 581B                                                                   0.0s
+ => CACHED [2/5] WORKDIR /app                                                                       0.0s
+ => CACHED [3/5] COPY package.json .                                                                0.0s
+ => CACHED [4/5] RUN npm install                                                                    0.0s
+ => CACHED [5/5] COPY . .                                                                           0.0s
+ => exporting to image                                                                              0.0s
+ => => exporting layers                                                                             0.0s
+ => => writing image sha256:442e42a74350cde5834ac7eef70efdcb3218c0099d6f082f15011b173950ae87        0.0s
+ => => naming to docker.io/library/node-example                                                     0.0s
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker tag node-example:latest 706054169063.dkr.ecr.eu-west-2.amazonaws.com/node-example:latest
+```
+
+I will then push the image to ECR:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push 706054169063.dkr.ecr.eu-west-2.amazonaws.com/node-example:latest
+The push refers to repository [706054169063.dkr.ecr.eu-west-2.amazonaws.com/node-example]
+b655b01209f7: Pushed 
+2972d38db3fa: Pushed 
+8fecd54a1233: Pushed 
+4f52e9ae1242: Pushed 
+31f710dc178f: Pushed 
+a599bf3e59b8: Pushed 
+e67e8085abae: Pushed 
+f1417ff83b31: Pushed 
+latest: digest: sha256:eb1a6659d93be31f9103739709dbe27806ed70d75b8159586074ee5dcf2f9644 size: 1990
+```
+
+This video is good for setting up AWS ECR, ECS and Fargate:
+https://www.youtube.com/watch?v=RgLt3R2A20s
+
+We have done the set up for ECR so we are now on ECS and Fargate
+
+#### Cluster
+First we create a cluster. We set a cluster name and use the default vpc. We use all three subnets.
+We use AWS Fargate serverless and then create the cluster. Cloud Formation keeps a record of the deployment.
+
+#### Task Definition
+We then define our task. The task definition can be nodejs-demo. We then add the uri for the ECR repository and give it a name.
+We choose the container port with http protocol. We will only use one container. We then use the AWS Fargate serverless environment.
+We choose 2GB of memory and the task execution role is already set. We then create the task definition.
+
+#### Service
+Next we create a service on the cluster. For the service we use launch type Fargate and use the Service for deployment configuration
+and the Task we defined earlier for our family. We then need to create a security group. We need to open port 80 for http so we create
+a new security group. We then add the http protocol rule for the security group. We also select public IP.
+We then create the service. We also need to give the service a new. The service deployment will take a few minutes.
+We then go to tasks and look at our task and access the public IP:
+
+![image](https://user-images.githubusercontent.com/27693622/234000188-f93eed06-7bfd-483b-ab80-7b363e73a238.png)
+
+Next we will create an application load balancer. We will delete the service and then create one with an application load
+balancer. We then create a new service and choose the load balancer type. We then create a new load balancer. We will use application load balancer.
+We assign the loadbalancer a name. We create a new listener for port 80 and a new target group. We can use service autoscaling
+with 1 and 4 for our minimum and maximum tasks. The target value will be 70%. We must remember to add a security group for the load balancer
+and the service. We then create the service. We can then access the load balancer public IP:
+
+![image](https://user-images.githubusercontent.com/27693622/234018436-9113e528-bf31-4e67-9a19-6f6d57828af9.png)
+
+
+
