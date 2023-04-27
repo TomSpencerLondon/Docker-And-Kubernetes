@@ -1702,9 +1702,6 @@ https://aws.amazon.com/pricing/
 
 ![image](https://user-images.githubusercontent.com/27693622/233976615-9a8cf529-cc49-4d7e-96cf-d597827dff44.png)
 
-This video is quite good for setting up ECS Fargate and deploying the docker image to AWS:
-https://www.youtube.com/watch?v=4D6Wy1R-FlU
-
 First I will push my image to Elastic Container Registry (ECR). I will need to login to ECR:
 ```bash
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 706054169063.dkr.ecr.eu-west-2.amazonaws.com
@@ -1779,5 +1776,7 @@ and the service. We then create the service. We can then access the load balance
 
 ![image](https://user-images.githubusercontent.com/27693622/234018436-9113e528-bf31-4e67-9a19-6f6d57828af9.png)
 
-
+### ECS - elastic container service
+This link is useful for aplication loadbalancing ecs tasks:
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-load-balancing.html
 
