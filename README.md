@@ -2238,3 +2238,326 @@ will figure out how to do it.
 - Pods are wrappers around Containers
 - For Pods to be managed for us, we need a "Controller" i.e. a "Deployment"
 
+#### The Deployment Object
+- Controls multiple Pods
+- set a desired state, Kubernetes then changes the actual state to match the desired state
+- Define which Pods and containers to run and the number of instances
+- Deployments can be paused, deleted and rolled back
+- Deployments can be scaled dynamically and automatically
+- You can change the number of desired Pods as needed
+- Deployments manage a Pod for you, you can also create multiple Deployments
+
+We don't directly control Pods, instead we use Deployments to set up the desired end state.
+
+### Example Project
+We will create a simple Node.js application and deploy it to Kubernetes. We will use a Docker image to run the application.
+The app has two endpoints: root and /error:
+```javascript
+const express = require('express');
+
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Hello from this NodeJS app!</h1>
+    <p>Try sending a request to /error and see what happens</p>
+  `);
+});
+
+app.get('/error', (req, res) => {
+  process.exit(1);
+});
+
+app.listen(8080);
+```
+
+We will deploy this application to our Kubernetes cluster. We still need to use Docker to create the image.
+Kubernetes needs an image to run the container.
+
+We build the image:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker build -t kub-first-app .
+[+] Building 15.6s (11/11) FINISHED                                                                      
+ => [internal] load .dockerignore                                                                   0.1s
+ => => transferring context: 63B                                                                    0.0s
+ => [internal] load build definition from Dockerfile                                                0.1s
+ => => transferring dockerfile: 157B                                                                0.0s
+ => [internal] load metadata for docker.io/library/node:14-alpine                                   1.7s
+ => [auth] library/node:pull token for registry-1.docker.io                                         0.0s
+ => [internal] load build context                                                                   0.1s
+ => => transferring context: 1.31kB                                                                 0.0s
+ => [1/5] FROM docker.io/library/node:14-alpine@sha256:434215b487a329c9e867202ff89e704d3a75e554822  8.8s
+ => => resolve docker.io/library/node:14-alpine@sha256:434215b487a329c9e867202ff89e704d3a75e554822  0.0s
+ => => sha256:434215b487a329c9e867202ff89e704d3a75e554822e07f3e0c0f9e606121b33 1.43kB / 1.43kB      0.0s
+ => => sha256:4e84c956cd276af9ed14a8b2939a734364c2b0042485e90e1b97175e73dfd548 1.16kB / 1.16kB      0.0s
+ => => sha256:0dac3dc27b1ad570e6c3a7f7cd29e88e7130ff0cad31b2ec5a0f222fbe971bdb 6.44kB / 6.44kB      0.0s
+ => => sha256:f56be85fc22e46face30e2c3de3f7fe7c15f8fd7c4e5add29d7f64b87abdaa09 3.37MB / 3.37MB      1.2s
+ => => sha256:8f665685b215c7daf9164545f1bbdd74d800af77d0d267db31fe0345c0c8fb8b 37.17MB / 37.17MB    7.0s
+ => => sha256:e5fca6c395a62ec277102af9e5283f6edb43b3e4f20f798e3ce7e425be226ba6 2.37MB / 2.37MB      1.1s
+ => => extracting sha256:f56be85fc22e46face30e2c3de3f7fe7c15f8fd7c4e5add29d7f64b87abdaa09           0.3s
+ => => sha256:561cb69653d56a9725be56e02128e4e96fb434a8b4b4decf2bdeb479a225feaf 448B / 448B          1.3s
+ => => extracting sha256:8f665685b215c7daf9164545f1bbdd74d800af77d0d267db31fe0345c0c8fb8b           1.1s
+ => => extracting sha256:e5fca6c395a62ec277102af9e5283f6edb43b3e4f20f798e3ce7e425be226ba6           0.1s
+ => => extracting sha256:561cb69653d56a9725be56e02128e4e96fb434a8b4b4decf2bdeb479a225feaf           0.0s
+ => [2/5] WORKDIR /app                                                                              0.5s
+ => [3/5] COPY package.json .                                                                       0.1s
+ => [4/5] RUN npm install                                                                           4.0s
+ => [5/5] COPY . .                                                                                  0.1s
+ => exporting to image                                                                              0.2s 
+ => => exporting layers                                                                             0.2s 
+ => => writing image sha256:df647099c29ed38622ae40476575c72e1a9198c5d0efeba401a7c0d5188eec11        0.0s 
+ => => naming to docker.io/library/kub-first-app                                                    0.0s
+```
+
+We start minikube:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube start
+😄  minikube v1.29.0 on Ubuntu 22.10
+🎉  minikube 1.30.1 is available! Download it: https://github.com/kubernetes/minikube/releases/tag/v1.30.1
+💡  To disable this notice, run: 'minikube config set WantUpdateNotification false'
+
+✨  Using the docker driver based on existing profile
+👍  Starting control plane node minikube in cluster minikube
+🚜  Pulling base image ...
+🤷  docker "minikube" container is missing, will recreate.
+🔥  Creating docker container (CPUs=2, Memory=3900MB) ...
+🐳  Preparing Kubernetes v1.26.1 on Docker 20.10.23 ...
+    ▪ Generating certificates and keys ...
+    ▪ Booting up control plane ...
+    ▪ Configuring RBAC rules ...
+🔗  Configuring bridge CNI (Container Networking Interface) ...
+    ▪ Using image gcr.io/k8s-minikube/storage-provisioner:v5
+🔎  Verifying Kubernetes components...
+🌟  Enabled addons: storage-provisioner, default-storageclass
+🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
+
+```
+We then check the status of minikube:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube status
+minikube
+type: Control Plane
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+```
+The above result shows us that our minikube instance is running. We can now send the instruction to create a deployment
+to the cluster. We can check the available commands with:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl help
+kubectl controls the Kubernetes cluster manager.
+
+ Find more information at: https://kubernetes.io/docs/reference/kubectl/
+
+Basic Commands (Beginner):
+  create          Create a resource from a file or from stdin
+  expose          Take a replication controller, service, deployment or pod and expose it as a new
+Kubernetes service
+  run             Run a particular image on the cluster
+  set             Set specific features on objects
+
+Basic Commands (Intermediate):
+  explain         Get documentation for a resource
+  get             Display one or many resources
+  edit            Edit a resource on the server
+  delete          Delete resources by file names, stdin, resources and names, or by resources and
+label selector
+
+Deploy Commands:
+  rollout         Manage the rollout of a resource
+  scale           Set a new size for a deployment, replica set, or replication controller
+  autoscale       Auto-scale a deployment, replica set, stateful set, or replication controller
+
+Cluster Management Commands:
+  certificate     Modify certificate resources.
+  cluster-info    Display cluster information
+  top             Display resource (CPU/memory) usage
+  cordon          Mark node as unschedulable
+  uncordon        Mark node as schedulable
+  drain           Drain node in preparation for maintenance
+  taint           Update the taints on one or more nodes
+
+Troubleshooting and Debugging Commands:
+  describe        Show details of a specific resource or group of resources
+  logs            Print the logs for a container in a pod
+  attach          Attach to a running container
+  exec            Execute a command in a container
+  port-forward    Forward one or more local ports to a pod
+  proxy           Run a proxy to the Kubernetes API server
+  cp              Copy files and directories to and from containers
+  auth            Inspect authorization
+  debug           Create debugging sessions for troubleshooting workloads and nodes
+  events          List events
+
+Advanced Commands:
+  diff            Diff the live version against a would-be applied version
+  apply           Apply a configuration to a resource by file name or stdin
+  patch           Update fields of a resource
+  replace         Replace a resource by file name or stdin
+  wait            Experimental: Wait for a specific condition on one or many resources
+  kustomize       Build a kustomization target from a directory or URL.
+
+Settings Commands:
+  label           Update the labels on a resource
+  annotate        Update the annotations on a resource
+  completion      Output shell completion code for the specified shell (bash, zsh, fish, or
+powershell)
+
+Other Commands:
+  alpha           Commands for features in alpha
+  api-resources   Print the supported API resources on the server
+  api-versions    Print the supported API versions on the server, in the form of "group/version"
+  config          Modify kubeconfig files
+  plugin          Provides utilities for interacting with plugins
+  version         Print the client and server version information
+
+Usage:
+  kubectl [flags] [options]
+
+Use "kubectl <command> --help" for more information about a given command.
+Use "kubectl options" for a list of global command-line options (applies to all commands).
+```
+
+This is the list of kubectl create commands:
+```bash
+Available Commands:
+  clusterrole           Create a cluster role
+  clusterrolebinding    Create a cluster role binding for a particular cluster role
+  configmap             Create a config map from a local file, directory or literal value
+  cronjob               Create a cron job with the specified name
+  deployment            Create a deployment with the specified name
+  ingress               Create an ingress with the specified name
+  job                   Create a job with the specified name
+  namespace             Create a namespace with the specified name
+  poddisruptionbudget   Create a pod disruption budget with the specified name
+  priorityclass         Create a priority class with the specified name
+  quota                 Create a quota with the specified name
+  role                  Create a role with single rule
+  rolebinding           Create a role binding for a particular role or cluster role
+  secret                Create a secret using specified subcommand
+  service               Create a service using a specified subcommand
+  serviceaccount        Create a service account with the specified name
+  token                 Request a service account token
+```
+We then need to deploy our image to dockerhub:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker tag kub-first-app tomspencerlondon/kub-first-app
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker push tomspencerlondon/kub-first-app
+```
+
+We can then create a deployment using the image we have pushed to docker hub:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl create deployment first-app --image=tomspencerlondon/kub-first-app
+deployment.apps/first-app created
+```
+
+We can then check the status of the deployment:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+first-app   1/1     1            1           29s
+```
+
+We can then check the status of the pods:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+first-app-886784874-ssbv9   1/1     Running   0          48s
+```
+
+We can then check the status of the cluster:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube dashboard
+🔌  Enabling dashboard ...
+    ▪ Using image docker.io/kubernetesui/dashboard:v2.7.0
+    ▪ Using image docker.io/kubernetesui/metrics-scraper:v1.0.8
+💡  Some dashboard features require the metrics-server addon. To enable all features please run:
+
+	minikube addons enable metrics-server	
+
+
+🤔  Verifying dashboard health ...
+🚀  Launching proxy ...
+🤔  Verifying proxy health ...
+🎉  Opening http://127.0.0.1:35463/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/ in your default browser...
+Opening in existing browser session.
+```
+This shows the cluster in our dashboard:
+![image](https://user-images.githubusercontent.com/27693622/235322108-a3a70f1b-6e30-463c-b06e-6a734e99f92b.png)
+
+We can see the status of the cluster. At the moment the cluster has a private IP address.
+
+### Kubectl behind the scenes
+Here, we have created a deployment object which is responsible for keeping a set of pods running. We can see this by running the following command:
+```bash
+kubectl create deployment --image ..
+```
+This creates a Master Node (Control Plane). The scheduler analyzes currently running Pods and finds the best Node for the new Pods.
+Kubelet manages the Pods and containers. The Pod inside the worker node runs our specified image inside a container.
+
+### The Service Object
+To reach a Pod we need a Service object. The Service object exposes Pods to the Cluster or externally. Pods already have an internal
+IP address. The IP address changes when a Pod is replaced so we can't rely on the Pod keeping the IP address. Finding Pods is hard if the IP
+changes all the time. Services group Pods with a shared IP which won't change. We can move multiple pods inside a service
+to expose the address inside the cluster and also to allow external access to Pods. The default for the Service IP is internal but this can be changed.
+Without Services, Pods are very hard to reach and communication is difficult. Reaching a Pod from outside the Cluster is not possible at all without Services.
+
+### Exposing a deployment with a Service
+
+We can expose a deployment with a service using the following command:
+```bash
+
+tom@tom-ubuntu:~$ kubectl expose deployment first-app --type=LoadBalancer --port=8080
+service/first-app exposed
+```
+
+We can then list the services:
+```bash
+tom@tom-ubuntu:~$ kubectl get services
+NAME         TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+first-app    LoadBalancer   10.106.173.108   <pending>     8080:32470/TCP   15s
+kubernetes   ClusterIP      10.96.0.1        <none>        443/TCP          26m
+```
+The kubernetes service is default, but we also have our own service first-app. We still can't see the external IP.
+To see the external IP we run:
+```bash
+tom@tom-ubuntu:~$ minikube service first-app
+|-----------|-----------|-------------|---------------------------|
+| NAMESPACE |   NAME    | TARGET PORT |            URL            |
+|-----------|-----------|-------------|---------------------------|
+| default   | first-app |        8080 | http://192.168.49.2:32470 |
+|-----------|-----------|-------------|---------------------------|
+🎉  Opening service default/first-app in default browser...
+tom@tom-ubuntu:~$ Opening in existing browser session.
+```
+Our app then starts in the browser on the IP address:
+
+![image](https://user-images.githubusercontent.com/27693622/235322624-a6514a0a-4441-4a46-a232-cc97f61ef070.png)
+
+We have just deployed an application using an imperative approach.
+We can test the redeployment by visiting /error
+Our events show that the container has restarted and then the pod has restarted:
+![image](https://user-images.githubusercontent.com/27693622/235322755-e25583a7-d65a-4535-8012-83a1c0f304dc.png)
+
+Each time the pod was restarted we started new containers.
+
+#### Scaling
+We can scale our application using the following command:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/welcome$ kubectl scale deployment/first-app --replicas=3
+deployment.apps/first-app scaled
+```
+We now have three running pods:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/welcome$ kubectl get pods
+NAME                        READY   STATUS    RESTARTS        AGE
+first-app-886784874-n856k   1/1     Running   0               15s
+first-app-886784874-ssbv9   1/1     Running   2 (4m21s ago)   23m
+first-app-886784874-wn4zb   1/1     Running   0               15s
+
+```
+
+We can cause the pods to restart by visiting /error. The pods then restart to fulfil the scaling instruction:
+![image](https://user-images.githubusercontent.com/27693622/235322907-8b7db092-ee00-4fbc-898f-275960724610.png)
+
