@@ -2157,5 +2157,84 @@ monitoring the cluster and making sure the desired state is maintained.
 | Containers  | Normal (Docker) Containers                                                                                                      |
 | Services    | Logical set (group) of Pods with a unique, Pod- and Container- independent IP address                                           |
 
+So, Kubernetes is a collection of concepts and tools. Specifically, a Kubernetes is required to run Containers. A
+Kubernetes
+Cluster is a network of machines.
 
+These machines are called "Nodes" in the Kubernetes world and there are two kinds of Nodes:
+
+- The Master Node: Hosts the "Control Plane" - i.e. it is the control center which manages your deployed resources.
+- Worker Nodes: Machines where the actual Containers are running on
+
+The Master Node hosts a couple of tools / processes:
+
+- An API Server: Responsible for communicating with the Worker Nodes (e.g. to launch a new Container)
+- A Scheduler: Responsible for managing the Containers, e.g. determine on which Node to launch a new Container
+
+The docs are useful for understanding the components:
+https://kubernetes.io/docs/concepts/overview/components/
+
+On Worker Nodes, we got the following running "tools" / processes:
+
+- kubelet service: The counterpart for the Master Node API Server, communicates with the Control Plane
+- Container runtime (e.g. Docker): used for running and controlling the Containers
+- kube-proxy service: responsible for Container network (and Cluster) communication and access
+
+If you create your own Kubernetes Cluster from scratch, you need to create all these machines and then install
+the Kubernetes software on those machines - of course you also need to manage permissions etc.
+
+Kubernetes creates, runs, stops and manages Containers for you. It does this in Pods which are smallest unit in
+Kubernetes.
+With Kubernetes, you don't manage Containers but rather Pods which then manage the Containers.
+
+### Kubernetes in Action - Diving into the Core Concepts
+
+We are now going to dive into Kubernetes and start working with it. We will look at:
+
+- Kubernetes & Testing Environment Setup
+- Working with Kubernetes Objects
+
+| What Kubernetes will do                                                                | What we need to do                                                                             |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| Kubernetes helps with managing the Pods                                                | Kubernetes will not create the infrastructure                                                  |
+| Create objects (e.g. Pods) and manage them                                             | Create the Cluster and the Node Instances (Worker + Master Nodes)                              |
+| Monitor Pods and re-create them, scale Pods etc.                                       | Setup API Server, kubelet and other Kubernetes services / software on Nodes                    |
+| Kubernetes utilizes the provided (cloud) resources to apply your configuration / goals | Create other (cloud) provider resources that might be needed (e.g. Load Balancer, Filesystems) |
+
+Tools like kubermatic can be useful for creating remote machines:
+https://www.kubermatic.com/
+
+AWS has a dedicated Elastic Kubernetes Service (EKS) which can be used to create a Kubernetes Cluster:
+https://aws.amazon.com/eks/
+
+### Installation
+To run Kubernetes locally, we will need a Cluster with a Master Node and Worker Nodes. We also need to install all required
+"software" (services). We will also need Kubectl, a CLI tool, to interact with the Cluster. We use kubectl to set the configuration
+mantained by Kubernetes. The Master Node applies the commands and ensures they are executed. The Kubectl tool is used to
+communicate with the Master Node. To use a marshall metaphore Kubectl is the commander in chief, the Master Node is the general
+and the Worker Nodes are the soldiers.
+
+We will use Minikube to run Kubernetes locally. Minikube is a tool that runs a single-node Kubernetes cluster in a virtual machine.
+This is quite good for Kubectl:
+https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+
+This link is quite good for minikube:
+https://minikube.sigs.k8s.io/docs/start/
+
+### Understanding Kubernetes Objects
+Kubernetes works with objects: Pods, Deployments, Services, Volumes etc.
+We can create the objects by executing a kubectl command. Objects can be created imperatively or declaratively.
+Imperatively means we tell Kubernetes what to do. Declaratively means we tell Kubernetes what we want and Kubernetes
+will figure out how to do it.
+
+#### The Pod object
+- The smallest unit in Kubernetes
+- Contains and runs one or multiple containers (most common use case is "one container per Pod")
+- Pods contain shared resources (e.g. volumes for all Pod containers)
+- Pods have cluster internal IP addresses by default
+- Containers inside a Pod can communicate via localhost
+- Pods are designed to be ephemeral - Kubernetes will start, stop and replace them as needed
+- Pods are not designed to be persistent - if a Pod crashes, it will be replaced by a new one and the data is lost
+- Pods are wrappers around Containers
+- For Pods to be managed for us, we need a "Controller" i.e. a "Deployment"
 
