@@ -1,13 +1,16 @@
 # Docker and Kubernetes
+
 https://www.udemy.com/course/docker-kubernetes-the-practical-guide
 
 ### What is Docker? And Why?
+
 Docker is a container technology. It is a tool for creating and managing containers.
 Containers are standardized units of software. It includes a package of code and dependencies to run the code.
 The same container will always give the same result. All behaviour is baked into the container.
 Like a picnic basket the container contains everything you need to run the application.
 
 ### Why Containers?
+
 Why do we want independent, standardized "application packages"?
 This code needs 14.13.0 to work:
 
@@ -23,39 +26,46 @@ app.get('/', (req, res) => {
 await connectToDatabase();
 app.listen(3000);
 ```
+
 This code would break on earlier versions. Having the exact same development environment as production can help a lot.
 
 ### Docker build
+
 Run dockerfiles with:
+
 ```bash
 docker build .
 ```
+
 This gets the node environment from DockerHub and sets up an image which is prepared to be started as a container.
 ![image](https://user-images.githubusercontent.com/27693622/230169853-fc346676-23f0-4904-b192-b1a3510a7dd7.png)
 
 #### Outline
+
 - foundation sections: lay out the basics for docker
-  - images & containers - how build own images
-  - data & volumes - ensure data persists
-  - containers & networking - multiple containers can talk to each other
+    - images & containers - how build own images
+    - data & volumes - ensure data persists
+    - containers & networking - multiple containers can talk to each other
 - real life
-  - multi-container projects
-  - using Docker-compose
-  - "Utility Containers"
-  - Deploy Containers with AWS
+    - multi-container projects
+    - using Docker-compose
+    - "Utility Containers"
+    - Deploy Containers with AWS
 - Kubernetes
-  - Introduction & Basics
-  - Data and Volumes
-  - Networking
-  - Deploying a Kubernetes Cluster
+    - Introduction & Basics
+    - Data and Volumes
+    - Networking
+    - Deploying a Kubernetes Cluster
 
 #### Docker Images and Containers: The Core Building Blocks
+
 - working with Images and Containers
 - How Images are related to containers
 - Pre-build and Custom Images
 - Create, run and Manage Docker Containers
 
 #### Running node in Docker
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes$ docker run -it node
 Welcome to Node.js v19.8.1.
@@ -63,6 +73,7 @@ Type ".help" for more information.
 > 1 + 1
 2
 ```
+
 The node runtime is exposed us with the command '-it'.
 Images contain the setup, Containers are the running version of the image.
 
@@ -70,6 +81,7 @@ Typically we would build up on the node image and then add the application code 
 within the base image. We would then write our own Dockerfile based on the image.
 
 We now add a Dockerfile for building the nodejs-app-starting-setup:
+
 ```dockerfile
 FROM node
 
@@ -83,12 +95,15 @@ EXPOSE 80
 
 CMD ["node", "server.js"]
 ```
+
 We build the image with:
+
 ```bash
 docker build -t nodejs-app . 
 ```
 
 This now shows an image:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/first-demo-starting-setup$ docker images
 REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
@@ -96,17 +111,21 @@ nodejs-app   latest    df28934e6946   3 days ago    916MB
 ```
 
 We need to expose the port in order to view the application:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/nodejs-app-starting-setup$ docker run -p 3000:80 7fa
 ```
+
 ![image](https://user-images.githubusercontent.com/27693622/230773820-d05619f7-ad4f-4459-a040-4a878e5d255e.png)
 
-
 ### Images are read only
+
 In the Dockerfile this line:
+
 ```dockerfile
 COPY . /app
 ```
+
 makes a copy of the code into the image. Images are locked and finished after we build the image.
 
 ![image](https://user-images.githubusercontent.com/27693622/230774755-90fd19fd-a069-440d-ac7a-ab69ab2b8caa.png)
@@ -115,6 +134,7 @@ The layer based architecture allows Docker to use caches to rebuild images. It w
 that code has changed on the source code.
 
 This version of our Dockerfile will ensure that npm install is not run everytime code has changed:
+
 ```dockerfile
 FROM node
 
@@ -136,7 +156,8 @@ CMD ["node", "server.js"]
 The containers run independently of the image and can be made to run in parallel. The image is a blueprint for the
 containers which then are running instances with read and write access. This allows multiple containers to be based
 on the same image without interfering with each other. Containers are separated from each other and have no shared
-date or state by default. A container is an isolated unit of software based on an image. A container is a running instance
+date or state by default. A container is an isolated unit of software based on an image. A container is a running
+instance
 of the image. Each instruction to create an image creates a cacheable layer - the layers help with image re-building and
 sharing.
 
@@ -145,14 +166,19 @@ sharing.
 ![image](https://user-images.githubusercontent.com/27693622/230777233-d25ad34e-6002-4801-94a0-65dc10fe519f.png)
 
 We can also attach to already-running containers with:
+
 ```bash
 docker attach <IMAGE ID>
 ```
+
 We can also view the logs with:
+
 ```bash
  docker logs -f <IMAGE ID>
 ```
+
 We can also attach to console output with the following:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/python-app-starting-setup$ docker start -ai deb
 Please enter the min number: 10
@@ -161,43 +187,54 @@ Please enter the max number: 23
 ```
 
 You can run:
+
 ```bash
 docker container prune
 ```
+
 to delete all stopped containers. To delete all unused images run:
+
 ```bash
 docker image prune 
 ```
+
 To automatically remove containers when they exit we can run:
+
 ```bash
 docker run -p 3000:80 -d --rm <IMAGE ID>
 ```
 
 We can also inspect an image with:
+
 ```bash
 docker image inspect <IMAGE ID>
 ```
 
 To look at and change docker containers:
+
 ```bash
 docker 
 ```
 
 We can copy local files to running containers with:
+
 ```bash
 docker cp dummy/. hungry_kilby:/test
 ```
+
 This is useful for adding files to running containers. This might be useful for configuration changes.
 Copying files out of a container can also be useful for log files.
 
 ![image](https://user-images.githubusercontent.com/27693622/230872646-d82e5b91-8d42-4dd7-91ec-7805adec5206.png)
 
 To name a container you can run:
+
 ```bash
 docker run --name <NAME> -it --rm <IMAGE_ID>
 ```
 
 We can also run:
+
 ```bash
 docker run --name server -p 3000:3000 --rm 53b
 ```
@@ -209,40 +246,44 @@ docker tag node-demo:latest academind/node-hello-world
 ```
 
 You can also push images that you have tagged:
+
 ```bash
 docker push tomspencerlondon/node-hello-world:1
 ```
 
 #### Managing Data and Working with Volumes
 
-We can store container data that we want to persist in volumes. 
+We can store container data that we want to persist in volumes.
 We have a node application and we will store data in temp and feedback:
+
 ```javascript
 app.post('/create', async (req, res) => {
-  const title = req.body.title;
-  const content = req.body.text;
+    const title = req.body.title;
+    const content = req.body.text;
 
-  const adjTitle = title.toLowerCase();
+    const adjTitle = title.toLowerCase();
 
-  const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
-  const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
+    const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
+    const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
 
-  await fs.writeFile(tempFilePath, content);
-  exists(finalFilePath, async (exists) => {
-    if (exists) {
-      res.redirect('/exists');
-    } else {
-      await fs.rename(tempFilePath, finalFilePath);
-      res.redirect('/');
-    }
-  });
+    await fs.writeFile(tempFilePath, content);
+    exists(finalFilePath, async (exists) => {
+        if (exists) {
+            res.redirect('/exists');
+        } else {
+            await fs.rename(tempFilePath, finalFilePath);
+            res.redirect('/');
+        }
+    });
 });
 ```
 
-The temp folder stores files before copying to feedback. The temp file will be temporary storage. We will persist data in the
+The temp folder stores files before copying to feedback. The temp file will be temporary storage. We will persist data
+in the
 feedback folder.
 
 We then add a Dockerfile:
+
 ```dockerfile
 FROM node:14
 
@@ -260,6 +301,7 @@ CMD ["node", "server.js"]
 ```
 
 We build and run the app:
+
 ```bash
 docker build -t feedback-node .
 docker run -p 3000:80 -d --name feedback-app --rm feedback-node
@@ -273,10 +315,12 @@ However, if we start the original container again the data still exists.
 
 We can use volumes to persist data between containers on the host machine which are mounted into containers.
 This creates a connection between the host machine folder and a folder in the container. Changes in either folder are
-reflected on the other folder. Volumes are persisted if a container shuts down. The volume will not be removed when a container is
+reflected on the other folder. Volumes are persisted if a container shuts down. The volume will not be removed when a
+container is
 removed. Containers can read and write data to volumes.
 
 To save volumes we can add a line in our Dockerfile:
+
 ```dockerfile
 FROM node:14
 
@@ -294,16 +338,19 @@ VOLUME ["/app/feedback"]
 
 CMD ["node", "server.js"]
 ```
+
 The ```VOLUME ["/app/feedback"]``` instruction assigns where we will listen for changes in the container to persist
 to our host files.
 
 We can now build and run the image:
+
 ```bash
 docker build -t feedback-node:volumes .
 docker run -d -p 3000:80 --rm --name feedback-app feedback-node:volumes
 ```
 
 We can view the logs with:
+
 ```bash
 docker logs feedback-app
 (node:1) UnhandledPromiseRejectionWarning: Error: EXDEV: cross-device link not permitted, rename '/app/temp/awesome.txt' -> '/app/feedback/awesome.txt'
@@ -323,56 +370,65 @@ docker logs feedback-app
 ```
 
 We now change the source code:
+
 ```javascript
 
 app.post('/create', async (req, res) => {
-  const title = req.body.title;
-  const content = req.body.text;
+    const title = req.body.title;
+    const content = req.body.text;
 
-  const adjTitle = title.toLowerCase();
+    const adjTitle = title.toLowerCase();
 
-  const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
-  const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
+    const tempFilePath = path.join(__dirname, 'temp', adjTitle + '.txt');
+    const finalFilePath = path.join(__dirname, 'feedback', adjTitle + '.txt');
 
-  await fs.writeFile(tempFilePath, content);
-  exists(finalFilePath, async (exists) => {
-    if (exists) {
-      res.redirect('/exists');
-    } else {
-      await fs.copyFile(tempFilePath, finalFilePath);
-      await fs.unlink(tempFilePath);
-      res.redirect('/');
-    }
-  });
+    await fs.writeFile(tempFilePath, content);
+    exists(finalFilePath, async (exists) => {
+        if (exists) {
+            res.redirect('/exists');
+        } else {
+            await fs.copyFile(tempFilePath, finalFilePath);
+            await fs.unlink(tempFilePath);
+            res.redirect('/');
+        }
+    });
 });
 
 app.listen(80);
 ```
 
 We can now rebuild and run the image:
+
 ```bash
 docker build -t feedback-node:volumes .
 docker run -d -p 3000:80 --rm --name feedback-app feedback-node:volumes
 ```
+
 There are two types of external Data Storage: volumes (managed by docker) and bind mounts (managed by us).
 We can use named volumes to ensure that the volume persists after a docker container has been shut down:
 
 ```bash
 docker run -d -p 3000:80 --rm --name feedback-app -v feedback:/app/feedback feedback-node:volumes
 ```
-The named volume will not be deleted by Docker when the container is shut down. Named volumes are not attached to containers. The
+
+The named volume will not be deleted by Docker when the container is shut down. Named volumes are not attached to
+containers. The
 data is now persisted with the help of named volumes.
 
 ### Bind Mounts
+
 Bind mounts can help us with changes in the source code so that they are reflected in the running container.
 Bind mounts are similar to volumes but the path is set on our internal machine where to keep the volumes.
 Bind mounts are great for persistent, editable data.
 
 There are also shortcuts for bind mounts:
+
 ```bash
 $(pwd):/app
 ```
+
 Windows:
+
 ```bash
 "%cd%":/app
 ```
@@ -385,29 +441,36 @@ docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "/home
 
 Here ```-v /app/node_modules``` ensures that the node_modules folder persists.
 
-
 ### Volumes and bind mounts summary
+
 - docker run -v /app/data (anonymous volume)
 - docker run -v data:/app/data (named volume)
 - docker run -v /path/to/code:/app/code (bind mount)
 
-Anonymous volumes are created specifically for a container. They do not survive --rm and cannot be used to share across containers.
-Anonymous volumes are useful for locking in data which is already in a container and which you don't want to be overwritten.
+Anonymous volumes are created specifically for a container. They do not survive --rm and cannot be used to share across
+containers.
+Anonymous volumes are useful for locking in data which is already in a container and which you don't want to be
+overwritten.
 They still create a counterpart on the host machine.
 
-Named volumes are created by -v with name:/PATH. They are not tied to specific containers and survive shutdown and restart of the container.
+Named volumes are created by -v with name:/PATH. They are not tied to specific containers and survive shutdown and
+restart of the container.
 These can be used to share across containers and shutdowns and removals.
 
-Bind mounts are given a place to save data on the host machine. They also survive shutdown / restart of the docker container.
+Bind mounts are given a place to save data on the host machine. They also survive shutdown / restart of the docker
+container.
 
 You can also ensure that the container is not able to write files with ro:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ docker run -d -p 3000:80 --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker
 -And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/node_modules feedback:volume
 ```
+
 This ensures that docker will not be able to write to folder and host files.
 
 You can delete all dangling volumes with:
+
 ```bash
     docker volume rm -f ${docker volume ls -f dangling=true -q}
 ```
@@ -416,10 +479,12 @@ We can use .dockerignore to specify which folders to ignore when we run
 the Dockerfile, in particular the ```COPY . .``` command.
 
 Docker supports build-time ARGs and runtime ENV variables.
+
 - ARG (set on image build) via --build-arg
 - set via ENV in Dockerfile or via --env on docker run
 
 For instance we can expect a port environment variable:
+
 ```javascript
 app.listen(process.env.PORT);
 ```
@@ -447,15 +512,19 @@ CMD ["npm", "start"]
 ```
 
 We can then set the port in our docker run command:
+
 ```bash
 docker run -d -p 3000:8000 --env PORT=8000 --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/temp -v /app/node_modules feedback:env
 ```
 
 You can also specify environment variables via ```--env-file```:
+
 ```bash
 docker run -d -p 3000:8000 --env-file ./.env --name feedback-app -v feedback:/app/feedback -v "/home/tom/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup:/app:ro" -v /app/temp -v /app/node_modules feedback:env
 ```
+
 The values would then be run from the file. We can add an ARG with the following:
+
 ```dockerfile
 FROM node:14
 
@@ -480,12 +549,14 @@ CMD ["npm", "start"]
 ```
 
 We can then set a default port via ARGs:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ docker build -t feedback:dev --build-arg DEFAULT_PORT=8000 .
 
 ```
 
 ### Networking: Cross-Container Communication
+
 - how to use networks inside containers
 - how to connect multiple containers
 - connect Container to other ports on your machine
@@ -498,26 +569,27 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/data-volumes-01-starting-setup$ 
 ![image](https://user-images.githubusercontent.com/27693622/230928391-ab153412-9954-4619-a2c7-ad95803bef6a.png)
 
 In our example application we are using axios to make a get request to the Star Wars API:
+
 ```javascript
 
 
 app.get('/movies', async (req, res) => {
-  try {
-    const response = await axios.get('https://swapi.dev/api/films');
-    res.status(200).json({ movies: response.data });
-  } catch (error) {
-    res.status(500).json({ message: 'Something went wrong.' });
-  }
+    try {
+        const response = await axios.get('https://swapi.dev/api/films');
+        res.status(200).json({movies: response.data});
+    } catch (error) {
+        res.status(500).json({message: 'Something went wrong.'});
+    }
 });
 
 
 app.get('/people', async (req, res) => {
-  try {
-    const response = await axios.get('https://swapi.dev/api/people');
-    res.status(200).json({ people: response.data });
-  } catch (error) {
-    res.status(500).json({ message: 'Something went wrong.' });
-  }
+    try {
+        const response = await axios.get('https://swapi.dev/api/people');
+        res.status(200).json({people: response.data});
+    } catch (error) {
+        res.status(500).json({message: 'Something went wrong.'});
+    }
 });
 ```
 
@@ -530,57 +602,67 @@ We might also want to communicate with our local host machine:
 ![image](https://user-images.githubusercontent.com/27693622/230929504-ead24d66-25ae-4dc0-b3a6-6b43f80263c9.png)
 
 Here we are also connecting to our local Mongodb instance:
+
 ```javascript
 mongoose.connect(
-  'mongodb://localhost:27017/swfavorites',
-  { useNewUrlParser: true },
-  (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      app.listen(3000);
+    'mongodb://localhost:27017/swfavorites',
+    {useNewUrlParser: true},
+    (err) => {
+        if (err) {
+            console.log(err);
+        } else {
+            app.listen(3000);
+        }
     }
-  }
 );
 ```
+
 We are using this instance to store data. This means that we also need to allow a connection to localhost connection
 requests.
 
 ### Container to Container
+
 Alongside connections to the web and the host containers may also need to connect to other containers.
 
 ![image](https://user-images.githubusercontent.com/27693622/231071713-3caf5bde-c469-41d2-8b33-ab544f79c482.png)
 
 Connecting to mongodb from our container fails:
+
 ```bash
 docker run --name favorites --rm -p 3000:3000 favorites-node
 ```
-The connection to the outside WWW works. Sending requests to the web works. The connection to the server on our localhost
+
+The connection to the outside WWW works. Sending requests to the web works. The connection to the server on our
+localhost
 is not working.
 Instead of localhost we need to use host.docker.internal to communicate with the host:
+
 ```javascript
 mongoose.connect(
-  'mongodb://host.docker.internal:27017/swfavorites',
-  { useNewUrlParser: true },
-  (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      app.listen(3000);
+    'mongodb://host.docker.internal:27017/swfavorites',
+    {useNewUrlParser: true},
+    (err) => {
+        if (err) {
+            console.log(err);
+        } else {
+            app.listen(3000);
+        }
     }
-  }
 );
 ```
 
 This works out of the box with Apple mac but on Linux we need to add an extra configuration with our run command:
+
 ```bash
 docker run --add-host=host.docker.internal:host-gateway --name favorites --rm -p 3000:3000 favorites-node
 ```
+
 This article was quite useful:
 https://medium.com/@TimvanBaarsen/how-to-connect-to-the-docker-host-from-inside-a-docker-container-112b4c71bc66
 ![image](https://user-images.githubusercontent.com/27693622/231079512-15df9661-48f3-4fc7-a253-16364803d6f6.png)
 
 To kill my linux mongo process I use:
+
 ```bash
 ps -edaf | grep mongo | grep -v grep
 root      577139       1  0 Apr10 ?        00:05:32 /snap/mongo44-configurable/30/usr/bin/mongod -f ./mongodb.conf
@@ -590,21 +672,26 @@ tom@tom-ubuntu:~$ kill 577139
 ```
 
 To restart I would use:
+
 ```bash
 tom@tom-ubuntu:~$ systemctl start mongodb.service
 tom@tom-ubuntu:~$ mongosh
 ```
 
 #### Container to Container Communication
+
 We can now set up our own mongodb container:
+
 ```bash
 docker run -d --name mongodb mongo
 ```
 
 We can run docker inspect on this container:
+
 ```bash
  docker container inspect mongodb
 ```
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/assignment-problem/python-app$ docker container inspect mongodb
 [
@@ -848,33 +935,39 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/assignment-problem/python-app$ d
 ```
 
 we can see the ip address:
+
 ```bash
 "IPAddress": "172.17.0.2"
 ```
 
 we can then use this address to connect to the mongodb container:
+
 ```javascript
 mongoose.connect(
-  'mongodb://172.17.0.2:27017/swfavorites',
-  { useNewUrlParser: true },
-  (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      app.listen(3000);
+    'mongodb://172.17.0.2:27017/swfavorites',
+    {useNewUrlParser: true},
+    (err) => {
+        if (err) {
+            console.log(err);
+        } else {
+            app.listen(3000);
+        }
     }
-  }
 );
 ```
+
 We then rebuild the image:
 
 ```bash
 docker build -t favorites-node .
 ```
+
 and run the container:
+
 ```bash
 docker run --name favorites --rm -p 3000:3000 favorites-node
 ```
+
 This is not so convenient as we have to look up the ip address and then build a new image. There is an easier way
 to make multiple docker containers talk to each other. We can use Container networks:
 
@@ -885,12 +978,15 @@ We create a network:
 ```bash
 docker network create favorites-net
 ```
+
 We can now run the mongodb database container and connect to the network:
+
 ```bash
  docker run -d --name mongodb --network favorites-net mongo
 ```
 
 We can now use the container name to connect to the mongodb container from our node application:
+
 ```bash
 mongoose.connect(
   'mongodb://mongodb:27017/swfavorites',
@@ -906,6 +1002,7 @@ mongoose.connect(
 ```
 
 We can now run the node application to connect to the same network:
+
 ```bash
 docker run --name favorites --network favorites-net -d --rm -p 3000:3000 favorites
 ```
@@ -922,24 +1019,30 @@ The containers can only talk to each other with a shared network. When we use a 
 have to expose IP addresses because the containers can communicate on the shared network.
 
 ### Docker Network IP Resolving
+
 we can use host.docker.internal to target the host machine and when we have containers in the same network
 we can use the name of the container to direct traffic. Docker does not replace the sort code it simply
 detects outgoing requests and resolves the IP for the requests. If a request is using the web or addresses within the
 container docker doesn't need to do anything.
 
 ### Building Multi-container applications
+
 We will now combine multiple services to one application and work with multiple containers.
 
 ![image](https://user-images.githubusercontent.com/27693622/232026077-6461260e-4a64-406e-a524-30ca12d8ed48.png)
 
-The above is a common setup for a web application which includes a backend database with a front end application which brings
+The above is a common setup for a web application which includes a backend database with a front end application which
+brings
 html to the screen and the frontend talks to the backend.
 
 Next we stop our local mongo server:
+
 ```bash
 systemctl stop mongodb.service
 ```
+
 The above is the command for linux ubuntu. We then test that mongo is no longer running locally:
+
 ```bash
 > mongosh
 Current Mongosh Log ID: 643bb8f18cb210ce64ba9eb6
@@ -948,11 +1051,13 @@ MongoNetworkError: connect ECONNREFUSED 127.0.0.1:27017
 ```
 
 We then run the mongo container:
+
 ```bash
 docker run --name mongodb --rm -d -p 27017:27017 mongo
 ```
 
 I can see the container running:
+
 ```bash
  docker ps
 CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS                                                  NAMES
@@ -960,6 +1065,7 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 ```
 
 We then run the multi-01-starting-setup backend:
+
 ```dockerfile
 FROM node
 
@@ -977,6 +1083,7 @@ CMD ["node", "app.js"]
 ```
 
 We then build the backend image:
+
 ```bash
 docker build -t goals-node .
 ```
@@ -984,51 +1091,63 @@ docker build -t goals-node .
 This fails to connect to mongodb. In the dockerised backend app we are still reaching for localhost.
 
 We add the ip for localhost for docker:
+
 ```javascript
 mongoose.connect(
-        'mongodb://host.docker.internal:27017/course-goals',
-        {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        },
-        (err) => {
-          if (err) {
+    'mongodb://host.docker.internal:27017/course-goals',
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    },
+    (err) => {
+        if (err) {
             console.error('FAILED TO CONNECT TO MONGODB');
             console.error(err);
-          } else {
+        } else {
             console.log('CONNECTED TO MONGODB');
             app.listen(3001);
-          }
         }
+    }
 );
 ```
+
 We should also remove our docker cache:
+
 ```bash
 docker system prune -a
 ```
+
 We then rebuild the image:
+
 ```bash
 docker build -t goals-node .
 ```
+
 We then rerun the container:
+
 ```bash
 docker run --name goals-backend --add-host=host.docker.internal:host-gateway --rm goals-node
 ```
+
 When running with linux we have to add:
+
 ```bash
 --add-host=host.docker.internal:host-gateway
 ```
+
 to expose host.docker.internal.
 
 The front end still fails to connect to the docker backend:
 ![image](https://user-images.githubusercontent.com/27693622/232289778-6662bf24-daee-49eb-ba4e-aaaeec9461df.png)
 
 We still have to expose the port:
+
 ```bash
  docker run --name goals-backend --add-host=host.docker.internal:host-gateway --rm -d -p 3001:3001 goals-node
 ```
 
 We can now connect the front end:
+
 ```bash
 npm run start
 
@@ -1048,6 +1167,7 @@ You can now view docker-frontend in the browser.
 Note that the development build is not optimized.
 To create a production build, use npm run build.
 ```
+
 And the error is gone:
 ![image](https://user-images.githubusercontent.com/27693622/232289864-f038f2bd-155b-4338-9fac-fa68bd4a7654.png)
 
@@ -1070,6 +1190,7 @@ CMD ["npm", "start"]
 ```
 
 We then build the application:
+
 ```bash
 docker build -t goals-react .
 ```
@@ -1082,114 +1203,133 @@ and run the container:
 
 For react applications we have to add -it.
 
-We have now added all building blocks to their own containers. 
+We have now added all building blocks to their own containers.
 
 We now want to put all the docker containers on the same network:
+
 ```bash
 
 docker network create goals-net
 ```
 
 We start the mongodb database with the above network:
+
 ```bash
 docker run --name mongodb --rm -d --network goals-net mongo
 ```
 
 and run the backend on the same network. We change the connection url to refer to the running
 mongodb docker container:
+
 ```javascript
 mongoose.connect(
-  'mongodb://mongodb:27017/course-goals',
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  },
-  (err) => {
-    if (err) {
-      console.error('FAILED TO CONNECT TO MONGODB');
-      console.error(err);
-    } else {
-      console.log('CONNECTED TO MONGODB');
-      app.listen(3001);
+    'mongodb://mongodb:27017/course-goals',
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    },
+    (err) => {
+        if (err) {
+            console.error('FAILED TO CONNECT TO MONGODB');
+            console.error(err);
+        } else {
+            console.log('CONNECTED TO MONGODB');
+            app.listen(3001);
+        }
     }
-  }
 );
 
 ```
+
 We then rebuild the image:
+
 ```bash
 docker build -t goals-node .
 ```
+
 and run docker with the correct network:
+
 ```bash
 docker run --name goals-backend --rm -d --network goals-net goals-node
 ```
 
 We then build the frontend image:
+
 ```bash
 docker build -t goals-react .
 ```
 
 We run the react container:
+
 ```bash
 docker run --name goals-frontend --network goals-net --rm -p 3000:3000 -it goals-react
 ```
+
 We still get an error:
 ![image](https://user-images.githubusercontent.com/27693622/232322276-325f0512-12ac-41e7-8d4a-4aa21e5de0ba.png)
 
 The code is running App.js in the browser not on the server. We can't use the container names.
 
 We don't use the network and change the endpoints to localhost:
+
 ```bash
 docker run --name goals-frontend --rm -p 3000:3000 -it goals-react
 ```
+
 We now have to stop the goals-backend container. We then restart the backend with port 3001 exposed:
 
 ```bash
 docker run --name goals-backend --rm -d -p 3001:3001 --network goals-net --rm goals-node
 ```
+
 Everything is now working. We now have more to add:
 
 ![image](https://user-images.githubusercontent.com/27693622/232322758-601ef40a-9b89-460e-99cc-05a086dbc269.png)
 
 We now want to persist data on mongodb and limit the access. This is how we persist data to a named volume:
+
 ```bash
 docker run --name mongodb --rm -d -v data:/data/db --network goals-net mongo
 ```
+
 The data now perists if I stop the docker container.
 
 We can now add username and password:
+
 ```bash
 docker run --name mongodb --rm -d -v data:/data/db --network goals-net -e MONGO_INITDB_ROOT_USERNAME=tom -e MONGO_INITDB_ROOT_PASSWORD=secret  mongo
 ```
+
 We now need to add the username and password to our mongodb connection string:
 
 ```javascript
 
 mongoose.connect(
-  'mongodb://tom:secret@mongodb:27017/course-goals?authSource=admin',
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  },
-  (err) => {
-    if (err) {
-      console.error('FAILED TO CONNECT TO MONGODB');
-      console.error(err);
-    } else {
-      console.log('CONNECTED TO MONGODB');
-      app.listen(3001);
+    'mongodb://tom:secret@mongodb:27017/course-goals?authSource=admin',
+    {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    },
+    (err) => {
+        if (err) {
+            console.error('FAILED TO CONNECT TO MONGODB');
+            console.error(err);
+        } else {
+            console.log('CONNECTED TO MONGODB');
+            app.listen(3001);
+        }
     }
-  }
 );
 ```
 
-We now add a named volume for the logs for the backend and add a mount for our code base and the app folder on the container and an anonymous volume for our node modules:
+We now add a named volume for the logs for the backend and add a mount for our code base and the app folder on the
+container and an anonymous volume for our node modules:
+
 ```bash
  docker run --name goals-backend -v logs:/app/logs -v /home/tom/Projects/Docker-And-Kubernetes/multi-01-starting-setup/backend:/app -v /app/node_modules --rm -p 3001:3001 --network goals-net goals-node
  ```
-We have also added nodemon and changed the command in the Dockerfile backend to npm start.
 
+We have also added nodemon and changed the command in the Dockerfile backend to npm start.
 
 ### Docker Compose: Elegant Multi-Container Orchestration
 
@@ -1202,6 +1342,7 @@ The versions of docker-compose are listed here:
 https://docs.docker.com/compose/compose-file/compose-file-v3/
 
 We can now start the docker images with:
+
 ```yaml
 version: "3.8"
 services:
@@ -1220,16 +1361,19 @@ volumes:
 ```
 
 and run the file with:
+
 ```bash
 docker-compose up
 ```
 
 We can delete the images, containers and volumes with:
+
 ```bash
 docker-compose down -v
 ```
 
 This is the docker-compose file with all the services:
+
 ```yml
 
 version: "3.8"
@@ -1269,30 +1413,37 @@ volumes:
 ```
 
 ### Working with "Utility Containers" and executing commands in Containers
+
 ![image](https://user-images.githubusercontent.com/27693622/232348989-19ada890-b2a8-47a4-9aeb-8fb2feb58b70.png)
 
 We build the dockerfile:
+
 ```dockerfile
 FROM node:14-alpine
 
 WORKDIR /app
 ```
+
 with:
+
 ```bash
 docker build -t node-util .
 ```
 
 We can use the utility containers for creating our environment:
+
 ```bash
 docker run -it -v /home/tom/Projects/Docker-And-Kubernetes/utility-containers:/app node-util npm init
 ```
 
 we can use the utility container to install express:
+
 ```bash
 docker run -it -v /home/tom/Projects/Docker-And-Kubernetes/utility-containers:/app my-npm install express --save
 ```
 
 This is quite long so we can use docker-compose:
+
 ```yaml
 version: "3.8"
 services:
@@ -1305,16 +1456,19 @@ services:
 ```
 
 We run the file with:
+
 ```bash
 docker-compose run npm init
 ```
 
 ### More complex Dockerized Project
+
 We will now practice a more complex container setup with Laravel and PHP.
 
 ![image](https://user-images.githubusercontent.com/27693622/232719934-3e2442b8-da24-47ca-a4e4-0398f95496ca.png)
 
 We first add nginx:
+
 ```yaml
 version: "3.8"
 
@@ -1326,7 +1480,9 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 ```
+
 and the configuration for the nginx.conf file:
+
 ```nginx configuration
 server {
     listen 80;
@@ -1349,6 +1505,7 @@ server {
 ```
 
 We then add our php Dockerfile:
+
 ```dockerfile
 FROM php:7.4-fpm-alpine
 
@@ -1356,7 +1513,10 @@ WORKDIR /var/www/html
 
 RUN docker-php-ext-install pdo pdo_mysql
 ```
-The base php image invokes the interpreter for our layered php image. We can now add composer to our docker-compose file:
+
+The base php image invokes the interpreter for our layered php image. We can now add composer to our docker-compose
+file:
+
 ```yaml
 version: "3.8"
 
@@ -1386,6 +1546,7 @@ services:
 ```
 
 We then set up the laravel project:
+
 ```bash
 docker-compose run --rm composer create-project --prefer-dist laravel/laravel .
 ```
@@ -1399,42 +1560,56 @@ docker-compose up server php mysql
 We now have a running laravel page:
 ![image](https://user-images.githubusercontent.com/27693622/232803104-f62ca2d5-508c-479d-ab64-45c62bc00066.png)
 
-We can also make server depend on mysql and php and then ensure that the docker-compose uses the latest images with --build:
+We can also make server depend on mysql and php and then ensure that the docker-compose uses the latest images with
+--build:
+
 ```bash
 docker-compose up -d --build server
 ```
 
 ### Deploying Docker Containers
-We will now deploy our docker containers to a remote server. We will learn about the deployment overview and general process.
-We will also look at concrete deployment scenarios, examples and problems. We will look at the manual and managed approaches.
-We will AWS as our cloud provider. 
+
+We will now deploy our docker containers to a remote server. We will learn about the deployment overview and general
+process.
+We will also look at concrete deployment scenarios, examples and problems. We will look at the manual and managed
+approaches.
+We will AWS as our cloud provider.
 
 #### Containers
+
 - standardized unit for shipping
 - they are independent of other containers
-- we want the same environment for development, testing and production so that the application works the same way in all environments
+- we want the same environment for development, testing and production so that the application works the same way in all
+  environments
 - We benefit from the isolated standalone environment in development and production
 - we have reproducible environments that are easy to share and use
 - there are no surpises - what works on a local machine also works in production
 
 #### Difference between production and development
+
 - bind mounts shouldn't be used in production
 - containerized apps might need a build step (e.g. React apps)
 - multi-container projects might need to be split across multiple hosts / remote machines
 - trade-offs between control and responsibility might be worth it
 
 #### Deployment Process and Providers
+
 We will start with a NodeJS environment with no database and nothing else. A possible deployment process is:
+
 - Install docker on a remote host (e.g. via SSH), push and pull image and run container based on image on remote host
 
 #### Deploy to AWS EC2
+
 AWS EC2 is a service that allows us to spin up and manage our own remote machines.
+
 1. Create and launch an EC2 instance, VPC and security group
 2. Configure security group to expose all required ports to www
 3. Connect to instance (SSH), install Docker and run container
 
 ### Commands to open port 80 and port 443:
+
 I saw these commands for opening port 80 and port 443 on ubuntu:
+
 ```bash
 tom@tom-ubuntu:~$ sudo ufw allow http
 [sudo] password for tom:
@@ -1444,7 +1619,9 @@ tom@tom-ubuntu:~$ sudo ufw allow https
 Rules updated
 Rules updated (v6)
 ```
+
 I then build the docker image and run the container:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-dep-example .
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker run -d --rm --name node-dep -p 80:80 node-dep-example
@@ -1454,19 +1631,24 @@ f7c9d35545fb0a0c28f5077b271b8669b9a8c2a829a0e6d230e021610a9a0a03
 ![image](https://user-images.githubusercontent.com/27693622/233949979-6687249c-f4ec-4215-9f6d-603c4dbb8f25.png)
 
 ### Bind mounts, volumes & COPY
+
 In development the container should encapsulate the runtime environment but not necessarily the code.
 We can use "Bind Mounts" to provide our local host project files to the running container. This allows for instant
 updates without restarting the container.
 In production the container should really work standalone, and we should not have source code on our remote machine.
-This image / container is the "single source of truth". There should be nothing around the container on the hosting machine.
-When we build for production we use COPY instead of bind mounts to copy a code snapshot into the image. This ensures that every
+This image / container is the "single source of truth". There should be nothing around the container on the hosting
+machine.
+When we build for production we use COPY instead of bind mounts to copy a code snapshot into the image. This ensures
+that every
 image runs without any extra, surrounding configuration or code.
 
 ### Install docker on ec2
+
 We have started an ec2 instance and connected to the instance. This tutorial is quite useful for connecting to ec2:
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html
 
 These are the commands for installing docker on ubuntu:
+
 ```bash
 sudo yum update -y
 sudo yum -y install docker
@@ -1475,11 +1657,15 @@ sudo service docker start
  
 sudo usermod -a -G docker ec2-user
 ```
+
 We then log out and back in after running the commands. Once we are logged back in we can run the following commands:
+
 ```bash
 sudo systemctl enable docker
 ```
+
 For me on my ec2 instance docker version shows:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker version
 Client:
@@ -1516,6 +1702,7 @@ This stack overflow post was useful for installing docker on ec2:
 https://stackoverflow.com/questions/53918841/how-to-install-docker-on-amazon-linux2/61708497#61708497
 
 This is what shows for docker ps, docker images and docker ps -a:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker ps
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
@@ -1529,16 +1716,22 @@ This link has general instructions for installing docker engine:
 https://docs.docker.com/engine/install/
 
 ### Pushing our local image to the code:
+
 There are two options here:
+
 1. Deploy source
+
 - build image on remote machine
 - push source code to remote machine, run docker build and docker run
 - this is a bit overly complex
+
 2. Deploy built image
+
 - build image before deployment (e.g. on local machine)
 - Just execute docker run
 
 We are going to deploy our image to dockerhub for now. First we will log into dockerhub locally:
+
 ```bash
 tom@tom-ubuntu:~$ docker login
 Authenticating with existing credentials...
@@ -1548,24 +1741,31 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 Login Succeeded
 ```
+
 We then create a repository on docker hub:
 ![image](https://user-images.githubusercontent.com/27693622/233958315-a1e20135-1e27-42f9-b09a-464b03bc0b12.png)
 
 We then add a .dockerignore file to our project:
+
 ```bash
 node_modules
 Dockerfile
 ```
+
 This avoids adding unecessary files. Next we build the image:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-dep-example-1 .
 ```
+
 We then tag our image for pushing to docker hub:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker tag node-dep-example-1 tomspencerlondon/node-example-1
 ```
 
 We then push the image to docker hub:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push tomspencerlondon/node-example-1
 Using default tag: latest
@@ -1580,7 +1780,9 @@ e67e8085abae: Mounted from library/node
 f1417ff83b31: Mounted from library/php 
 latest: digest: sha256:a1924592ca810836bbf78f9e2bd2a0f83848d1f8ecbfe18f8b0224f0319ac491 size: 1990
 ```
+
 Now we can run the image on our remote machine:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker run -d --rm -p 80:80 tomspencerlondon/node-example-1
 Unable to find image 'tomspencerlondon/node-example-1:latest' locally
@@ -1599,6 +1801,7 @@ fbe136f3958a0a9b6f258064625d8968b73ca52da9cce4e3278141912e024463
 ```
 
 We can then check the container is running:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker ps
 CONTAINER ID   IMAGE                             COMMAND                  CREATED          STATUS          PORTS                               NAMES
@@ -1609,15 +1812,19 @@ We can also access the site:
 ![image](https://user-images.githubusercontent.com/27693622/233960782-2df87a02-d64b-4200-8b66-eee57dbb37c3.png)
 
 If we want to make changes to our application we can make the change and rebuild the image:
+
 ```bash
  docker build -t node-dep-example-1 .
 ```
 
 We then tag the image:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker tag node-dep-example-1 tomspencerlondon/node-example-1
 ```
+
 and then push the image to docker hub:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push tomspencerlondon/node-example-1
 Using default tag: latest
@@ -1632,7 +1839,9 @@ e67e8085abae: Layer already exists
 f1417ff83b31: Layer already exists 
 latest: digest: sha256:eb1a6659d93be31f9103739709dbe27806ed70d75b8159586074ee5dcf2f9644 size: 1990
 ```
+
 We then stop the running container on the ec2 instance:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker ps
 CONTAINER ID   IMAGE                             COMMAND                  CREATED          STATUS          PORTS                               NAMES
@@ -1643,7 +1852,9 @@ fbe136f3958a   tomspencerlondon/node-example-1   "docker-entrypoint.s…"   22 m
 [ec2-user@ip-172-31-14-37 ~]$ docker stop fbe
 fbe
 ```
+
 We then pull our image from docker hub:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker pull tomspencerlondon/node-example-1
 Using default tag: latest
@@ -1660,20 +1871,25 @@ Digest: sha256:eb1a6659d93be31f9103739709dbe27806ed70d75b8159586074ee5dcf2f9644
 Status: Downloaded newer image for tomspencerlondon/node-example-1:latest
 docker.io/tomspencerlondon/node-example-1:latest
 ```
+
 We then run the image:
+
 ```bash
 [ec2-user@ip-172-31-14-37 ~]$ docker run -d --rm -p 80:80 tomspencerlondon/node-example-1
 4ab3476b1d8a7e3dbe2d55558dca4cbc3f4500de32049757c31831e1100c9c76
 ```
+
 We can then see the change we made:
 ![image](https://user-images.githubusercontent.com/27693622/233966400-036eb58f-6058-4081-8240-30e23f75a7f1.png)
 
 #### Docker is awesome!
+
 - only docker needs to be installed (no other runtimes or tools)
 - uploading our code is easy
 - the image is the exact same app and environment as on our machine
 
 #### "Do it your self" approach - Disadvantages
+
 - we fully own the remote machine - we are responsible for it (and its security)
 - we ensure all the system software stays updated
 - we have to manage the network and security groups / firewall
@@ -1683,18 +1899,24 @@ We can then see the change we made:
 We might want to be able to run commands on a local machine to deploy the image.
 
 #### From manual deployment to managed services
+
 We may want less control so that we have less responsibility.
 Instead of running our own EC2 instance we might want a managed service. For the ec2 instance we need to
 create the instance, manage it, keep it updated, monitor it and scale the instances. If we have the admin/cloud expert
 knowledge this is great.
 
 We might go for a managed remote machine. Here AWS ECS can help us. ECS stands for Elastic Container Service.
-It will help us with management, monitoring and scaling. The advantage is that the creation, management, updating, monitoring
-and scaling is simplified. This is great if we simply want to deploy our app / containers. We therefore have less control but
-also less responsibility. We now use a service provided by a cloud provider and we have to follow the rules of the service.
-Running containers is no longer our responsibility but we use the tools of the cloud provider for the service we want to use.
+It will help us with management, monitoring and scaling. The advantage is that the creation, management, updating,
+monitoring
+and scaling is simplified. This is great if we simply want to deploy our app / containers. We therefore have less
+control but
+also less responsibility. We now use a service provided by a cloud provider and we have to follow the rules of the
+service.
+Running containers is no longer our responsibility but we use the tools of the cloud provider for the service we want to
+use.
 
-NB: We really should double-check to remove ALL created resources (e.g. load balancers, NAT gateways etc.) once we're done - otherwise, monthly costs can be much higher!
+NB: We really should double-check to remove ALL created resources (e.g. load balancers, NAT gateways etc.) once we're
+done - otherwise, monthly costs can be much higher!
 The AWS pricing page is quite useful for costs:
 https://aws.amazon.com/pricing/
 
@@ -1703,10 +1925,13 @@ https://aws.amazon.com/pricing/
 ![image](https://user-images.githubusercontent.com/27693622/233976615-9a8cf529-cc49-4d7e-96cf-d597827dff44.png)
 
 First I will push my image to Elastic Container Registry (ECR). I will need to login to ECR:
+
 ```bash
 aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 706054169063.dkr.ecr.eu-west-2.amazonaws.com
 ```
+
 I will then build the image and tag it for pushing to ECR:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker build -t node-example .
 [+] Building 0.9s (11/11) FINISHED                                                                       
@@ -1731,6 +1956,7 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ do
 ```
 
 I will then push the image to ECR:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/deployment-01-starting-setup$ docker push 706054169063.dkr.ecr.eu-west-2.amazonaws.com/node-example:latest
 The push refers to repository [706054169063.dkr.ecr.eu-west-2.amazonaws.com/node-example]
@@ -1751,32 +1977,185 @@ https://www.youtube.com/watch?v=RgLt3R2A20s
 We have done the set up for ECR so we are now on ECS and Fargate
 
 #### Cluster
+
 First we create a cluster. We set a cluster name and use the default vpc. We use all three subnets.
 We use AWS Fargate serverless and then create the cluster. Cloud Formation keeps a record of the deployment.
 
 #### Task Definition
-We then define our task. The task definition can be nodejs-demo. We then add the uri for the ECR repository and give it a name.
-We choose the container port with http protocol. We will only use one container. We then use the AWS Fargate serverless environment.
+
+We then define our task. The task definition can be nodejs-demo. We then add the uri for the ECR repository and give it
+a name.
+We choose the container port with http protocol. We will only use one container. We then use the AWS Fargate serverless
+environment.
 We choose 2GB of memory and the task execution role is already set. We then create the task definition.
 
 #### Service
-Next we create a service on the cluster. For the service we use launch type Fargate and use the Service for deployment configuration
-and the Task we defined earlier for our family. We then need to create a security group. We need to open port 80 for http so we create
+
+Next we create a service on the cluster. For the service we use launch type Fargate and use the Service for deployment
+configuration
+and the Task we defined earlier for our family. We then need to create a security group. We need to open port 80 for
+http so we create
 a new security group. We then add the http protocol rule for the security group. We also select public IP.
 We then create the service. We also need to give the service a new. The service deployment will take a few minutes.
 We then go to tasks and look at our task and access the public IP:
 
 ![image](https://user-images.githubusercontent.com/27693622/234000188-f93eed06-7bfd-483b-ab80-7b363e73a238.png)
 
-Next we will create an application load balancer. We will delete the service and then create one with an application load
-balancer. We then create a new service and choose the load balancer type. We then create a new load balancer. We will use application load balancer.
-We assign the loadbalancer a name. We create a new listener for port 80 and a new target group. We can use service autoscaling
-with 1 and 4 for our minimum and maximum tasks. The target value will be 70%. We must remember to add a security group for the load balancer
+Next we will create an application load balancer. We will delete the service and then create one with an application
+load
+balancer. We then create a new service and choose the load balancer type. We then create a new load balancer. We will
+use application load balancer.
+We assign the loadbalancer a name. We create a new listener for port 80 and a new target group. We can use service
+autoscaling
+with 1 and 4 for our minimum and maximum tasks. The target value will be 70%. We must remember to add a security group
+for the load balancer
 and the service. We then create the service. We can then access the load balancer public IP:
 
 ![image](https://user-images.githubusercontent.com/27693622/234018436-9113e528-bf31-4e67-9a19-6f6d57828af9.png)
 
 ### ECS - elastic container service
+
 This link is useful for aplication loadbalancing ecs tasks:
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-load-balancing.html
+
+### Getting started with Kubernetes
+
+In this section we will learn about deploying docker containers with Kubernetes. This allows independent container
+orchestration.
+We will understand container deployment challenges. We will also define Kubernetes and learn why it is useful.
+We will also learn about Kubernetes concepts and components. This link is useful for getting started with Kubernetes:
+https://kubernetes.io/
+
+As mentioned on the above link:
+Kubernetes is an open-source system for automating deployment, scaling and management of containerized applications.
+
+When we think about deploying containers, we might have a problem. Manually deploying servers and containers is not
+scalable.
+Manual deployment of containers is hard to maintain, error-prone and annoying. even beyond security and configuration
+concerns.
+Containers might crash / go down and need to be replaced. We would want to replace containers but when manually
+deploying containers
+we would have to manually monitor and deploy containers. We can't sit the entire day watching containers to see if they
+are running or not.
+We might need more container instances for traffic spikes, and we might need to scale down when traffic is low. We also
+might want traffic to
+be equally distributed across multiple instances of the same container. We might also want to deploy containers across
+multiple servers.
+So far when we have worked locally we have only deployed one container instance for each service. AWS ECS does help us
+with
+container health checks and automatic re-deployment, autoscaling and load balancing. AWS ECS does lock us into the
+service.
+If we use a specific service we are locked into that service. We might want to use a different service in the future.
+AWS ECS thinks in terms of clusters tasks and clusters. We can write configuration files and use the AWS CLI to deploy
+containers.
+We will, however, always be locked into the AWS ECS service. The cloud files would only work with ECS.
+
+### Kubernetes to the Rescue
+
+With Kubernetes we have a way of defining our deployments independent from the cloud service we are using. Kubernetes is
+an open source system and
+standard for orchectrating container deployments. It can help with automatic deployment, scaling and management of
+containerized applications.
+Kubernetes allows us to write down a configuration file where we define the desired state of our application and we can
+pass this configuration
+to any cloud provider or tool to deploy our application. This is an example of the kind of configuration Kubernetes
+offers:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  annotations:
+
+spec:
+  selector:
+    app: auth-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
+```
+
+This configuration would work with any cloud provider. We can then use the configuration to describe the to-be-created
+and to-be-managed resources
+of the Kubernetes Cluster. We can merge cloud-provider specific settings into the main file. If we want to use a
+different cloud provider we can then
+replace the cloud provider specific settings:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal-access-log-enabled: "true"
+spec:
+  selector:
+    app: auth-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
+```
+
+Kubernetes is powerful and interesting, but we do need to understand what it is not. It is not a cloud service provider.
+It is an open-source project
+and collection of configuration options. It is not a service by a cloud service provider, it can be used with any cloud
+provider.
+Kubernetes is not a software but a collection of concepts and tools that can help us with deployment on any provider of
+our choice. It is not a paid
+service but a free open-source project. It is not a tool for deploying containers but a tool for orchestrating container
+deployments.
+Kubernetes is like docker-compose for multiple machines. Docker-compose is for container orchestration one machine and
+Kubernetes is for multiple machines.
+
+### Kubernetes deployment architecture
+
+![image](https://user-images.githubusercontent.com/27693622/235035081-9b5a85ff-d788-4c73-8a94-86ec3aca219f.png)
+
+There is an important clarification on things we have to do and what Kubernetes does for us. We have to create a
+Kubernetes cluster and the Node instances (Worker + Master Nodes).
+We have to set up the API server, kubelet and other Kubernetes services / software on Nodes. We might need to create
+other cloud provider resources that might be needed
+(e.g. Load Balancer, Filesystems). Kubernetes will not set up the resources. Kubernetes will manage the pods and create
+them for us. It will monitor the pods and utilize
+the provided resources to apply your configuration / goals. Kubernetes does not create the cluster, it will manage it
+for us.
+
+### Worker nodes
+
+What happens on the worker nodes (e.g. creating a Pod) is managed by the Master Nodes.
+
+![image](https://user-images.githubusercontent.com/27693622/235261777-caba119e-7544-4885-bb98-e9fdcd9b8bad.png)
+
+With Kubernetes we define the desired state of our application. Kubernetes will then create the resources for us.
+Kubernetes will then monitor the resources and
+make sure the desired state is maintained. If a pod crashes, Kubernetes will create a new pod. If we want to scale up,
+Kubernetes will create new pods.
+If we want to scale down, Kubernetes will delete pods. If we want to update our application, Kubernetes will create new
+pods with the new version and delete the old pods.
+
+### Master Node
+
+The master node is the brain of the cluster. It is responsible for managing the cluster. It is responsible for
+monitoring the cluster and making sure the desired state is maintained.
+
+![image](https://user-images.githubusercontent.com/27693622/235262512-11b9ffbf-e73d-459e-b6f1-d0808e7215aa.png)
+
+### Core components
+
+| Component   | Description                                                                                                                     |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------|
+| Cluster     | A set of Node machines which are running the Containerized Application (Worker Nodes) or control other Nodes (Master Node)      |
+| Node        | Physical or virtual machine with a certain hardware capacity which hosts one or multiple Pods and communicates with the Cluster |
+| Master Node | Custer control plane, managing the Pods across Worker Nodes                                                                     |
+| Worker Node | Hosts Pods, running App Containers (+ resources)                                                                                |
+| Pods        | Pods hold the actual running App Containers and their required resources (e.g. volumes)                                         |
+| Containers  | Normal (Docker) Containers                                                                                                      |
+| Services    | Logical set (group) of Pods with a unique, Pod- and Container- independent IP address                                           |
+
+
 
