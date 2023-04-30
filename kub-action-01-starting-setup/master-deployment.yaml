@@ -1,3 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    group: example
+spec:
+  selector:
+    app: second-app
+    tier: backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,13 +35,3 @@ spec:
       containers:
         - name: second-node
           image: tomspencerlondon/kub-first-app:2
-          imagePullPolicy: Always
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            periodSeconds: 10
-            initialDelaySeconds: 5
-
-
-

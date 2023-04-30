@@ -2853,7 +2853,124 @@ but we can also use the configuration:
 ```bash
 kubectl delete -f=deployment.yaml
 ```
-This would delete the deployment. 
+This would delete the deployment. We can also have one file with all the configuration:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: second-app
+    tier: backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: second-app
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: second-app
+        tier: backend
+    spec:
+      containers:
+        - name: second-node
+          image: tomspencerlondon/kub-first-app:2
+```
+We use dashes to separate the Deployment and Service definitions. We also use 3 dashes to separate the objects.
+The Service would then continuously monitor the deployment.
+To test this we can delete the deployment and service we started earlier with:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl delete -f=deployment.yaml -f=service.yaml
+deployment.apps "second-app-deployment" deleted
+service "backend" deleted
+```
+and then apply the new merged master configuration:
+```bash
 
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f=master-deployment.yaml
+service/backend created
+deployment.apps/second-app-deployment created
 
+```
+
+### Selectors
+Alongside selector matchLabels we can use matchExpressions.
+The matchExpressions available are In, NotIn and Exists.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-app-deployment
+spec:
+  replicas: 1
+  selector:
+    #    matchLabels:
+    #      app: second-app
+    #      tier: backend
+    matchExpressions:
+      - {key: app, operator: In, values: [second-app, first-app]}
+```
+
+We can also delete by selector:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+second-app-deployment   1/1     1            1           6m20s
+```
+We use add the label to our service.yaml and deployment.yml and rerun the deployments to give them labels. We can then 
+delete the deploymnent and service with:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl delete deployments,services -l group=example
+deployment.apps "second-app-deployment" deleted
+service "backend" deleted
+```
+We can add a liveness probe for the containers to ensure that the deployment is restarted when there is an error:
+```bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-app-deployment
+  labels:
+    group: example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: second-app
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: second-app
+        tier: backend
+    spec:
+      containers:
+        - name: second-node
+          image: tomspencerlondon/kub-first-app:2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            initialDelaySeconds: 5
+```
+The liveness probe is useful as a health check to ensure that the container is running correctly. If the liveness probe fails
+then the container is restarted.
+
+There are also lots of configuration options for the container objects such as imagePullPolicy: Always, Never or IfNotPresent.
+We can use Always to ensure that changes to the image with the same tag are pulled. We can use Never to ensure that the image
+is never pulled. We can use IfNotPresent to ensure that the image is only pulled if it is not present on the node.
 
