@@ -2208,13 +2208,18 @@ AWS has a dedicated Elastic Kubernetes Service (EKS) which can be used to create
 https://aws.amazon.com/eks/
 
 ### Installation
-To run Kubernetes locally, we will need a Cluster with a Master Node and Worker Nodes. We also need to install all required
-"software" (services). We will also need Kubectl, a CLI tool, to interact with the Cluster. We use kubectl to set the configuration
+
+To run Kubernetes locally, we will need a Cluster with a Master Node and Worker Nodes. We also need to install all
+required
+"software" (services). We will also need Kubectl, a CLI tool, to interact with the Cluster. We use kubectl to set the
+configuration
 mantained by Kubernetes. The Master Node applies the commands and ensures they are executed. The Kubectl tool is used to
-communicate with the Master Node. To use a marshall metaphore Kubectl is the commander in chief, the Master Node is the general
+communicate with the Master Node. To use a marshall metaphore Kubectl is the commander in chief, the Master Node is the
+general
 and the Worker Nodes are the soldiers.
 
-We will use Minikube to run Kubernetes locally. Minikube is a tool that runs a single-node Kubernetes cluster in a virtual machine.
+We will use Minikube to run Kubernetes locally. Minikube is a tool that runs a single-node Kubernetes cluster in a
+virtual machine.
 This is quite good for Kubectl:
 https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
 
@@ -2222,12 +2227,14 @@ This link is quite good for minikube:
 https://minikube.sigs.k8s.io/docs/start/
 
 ### Understanding Kubernetes Objects
+
 Kubernetes works with objects: Pods, Deployments, Services, Volumes etc.
 We can create the objects by executing a kubectl command. Objects can be created imperatively or declaratively.
 Imperatively means we tell Kubernetes what to do. Declaratively means we tell Kubernetes what we want and Kubernetes
 will figure out how to do it.
 
 #### The Pod object
+
 - The smallest unit in Kubernetes
 - Contains and runs one or multiple containers (most common use case is "one container per Pod")
 - Pods contain shared resources (e.g. volumes for all Pod containers)
@@ -2239,6 +2246,7 @@ will figure out how to do it.
 - For Pods to be managed for us, we need a "Controller" i.e. a "Deployment"
 
 #### The Deployment Object
+
 - Controls multiple Pods
 - set a desired state, Kubernetes then changes the actual state to match the desired state
 - Define which Pods and containers to run and the number of instances
@@ -2250,22 +2258,25 @@ will figure out how to do it.
 We don't directly control Pods, instead we use Deployments to set up the desired end state.
 
 ### Example Project
-We will create a simple Node.js application and deploy it to Kubernetes. We will use a Docker image to run the application.
+
+We will create a simple Node.js application and deploy it to Kubernetes. We will use a Docker image to run the
+application.
 The app has two endpoints: root and /error:
+
 ```javascript
 const express = require('express');
 
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send(`
+    res.send(`
     <h1>Hello from this NodeJS app!</h1>
     <p>Try sending a request to /error and see what happens</p>
   `);
 });
 
 app.get('/error', (req, res) => {
-  process.exit(1);
+    process.exit(1);
 });
 
 app.listen(8080);
@@ -2275,6 +2286,7 @@ We will deploy this application to our Kubernetes cluster. We still need to use 
 Kubernetes needs an image to run the container.
 
 We build the image:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker build -t kub-first-app .
 [+] Building 15.6s (11/11) FINISHED                                                                      
@@ -2310,6 +2322,7 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ do
 ```
 
 We start minikube:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube start
 😄  minikube v1.29.0 on Ubuntu 22.10
@@ -2332,7 +2345,9 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ mi
 🏄  Done! kubectl is now configured to use "minikube" cluster and "default" namespace by default
 
 ```
+
 We then check the status of minikube:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube status
 minikube
@@ -2342,8 +2357,10 @@ kubelet: Running
 apiserver: Running
 kubeconfig: Configured
 ```
+
 The above result shows us that our minikube instance is running. We can now send the instruction to create a deployment
 to the cluster. We can check the available commands with:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl help
 kubectl controls the Kubernetes cluster manager.
@@ -2420,6 +2437,7 @@ Use "kubectl options" for a list of global command-line options (applies to all 
 ```
 
 This is the list of kubectl create commands:
+
 ```bash
 Available Commands:
   clusterrole           Create a cluster role
@@ -2440,19 +2458,23 @@ Available Commands:
   serviceaccount        Create a service account with the specified name
   token                 Request a service account token
 ```
+
 We then need to deploy our image to dockerhub:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker tag kub-first-app tomspencerlondon/kub-first-app
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ docker push tomspencerlondon/kub-first-app
 ```
 
 We can then create a deployment using the image we have pushed to docker hub:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl create deployment first-app --image=tomspencerlondon/kub-first-app
 deployment.apps/first-app created
 ```
 
 We can then check the status of the deployment:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
 NAME        READY   UP-TO-DATE   AVAILABLE   AGE
@@ -2460,6 +2482,7 @@ first-app   1/1     1            1           29s
 ```
 
 We can then check the status of the pods:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get pods
 NAME                        READY   STATUS    RESTARTS   AGE
@@ -2467,6 +2490,7 @@ first-app-886784874-ssbv9   1/1     Running   0          48s
 ```
 
 We can then check the status of the cluster:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ minikube dashboard
 🔌  Enabling dashboard ...
@@ -2483,29 +2507,42 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ mi
 🎉  Opening http://127.0.0.1:35463/api/v1/namespaces/kubernetes-dashboard/services/http:kubernetes-dashboard:/proxy/ in your default browser...
 Opening in existing browser session.
 ```
+
 This shows the cluster in our dashboard:
 ![image](https://user-images.githubusercontent.com/27693622/235322108-a3a70f1b-6e30-463c-b06e-6a734e99f92b.png)
 
 We can see the status of the cluster. At the moment the cluster has a private IP address.
 
 ### Kubectl behind the scenes
-Here, we have created a deployment object which is responsible for keeping a set of pods running. We can see this by running the following command:
+
+Here, we have created a deployment object which is responsible for keeping a set of pods running. We can see this by
+running the following command:
+
 ```bash
 kubectl create deployment --image ..
 ```
-This creates a Master Node (Control Plane). The scheduler analyzes currently running Pods and finds the best Node for the new Pods.
+
+This creates a Master Node (Control Plane). The scheduler analyzes currently running Pods and finds the best Node for
+the new Pods.
 Kubelet manages the Pods and containers. The Pod inside the worker node runs our specified image inside a container.
 
 ### The Service Object
-To reach a Pod we need a Service object. The Service object exposes Pods to the Cluster or externally. Pods already have an internal
-IP address. The IP address changes when a Pod is replaced so we can't rely on the Pod keeping the IP address. Finding Pods is hard if the IP
-changes all the time. Services group Pods with a shared IP which won't change. We can move multiple pods inside a service
-to expose the address inside the cluster and also to allow external access to Pods. The default for the Service IP is internal but this can be changed.
-Without Services, Pods are very hard to reach and communication is difficult. Reaching a Pod from outside the Cluster is not possible at all without Services.
+
+To reach a Pod we need a Service object. The Service object exposes Pods to the Cluster or externally. Pods already have
+an internal
+IP address. The IP address changes when a Pod is replaced so we can't rely on the Pod keeping the IP address. Finding
+Pods is hard if the IP
+changes all the time. Services group Pods with a shared IP which won't change. We can move multiple pods inside a
+service
+to expose the address inside the cluster and also to allow external access to Pods. The default for the Service IP is
+internal but this can be changed.
+Without Services, Pods are very hard to reach and communication is difficult. Reaching a Pod from outside the Cluster is
+not possible at all without Services.
 
 ### Exposing a deployment with a Service
 
 We can expose a deployment with a service using the following command:
+
 ```bash
 
 tom@tom-ubuntu:~$ kubectl expose deployment first-app --type=LoadBalancer --port=8080
@@ -2513,14 +2550,17 @@ service/first-app exposed
 ```
 
 We can then list the services:
+
 ```bash
 tom@tom-ubuntu:~$ kubectl get services
 NAME         TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
 first-app    LoadBalancer   10.106.173.108   <pending>     8080:32470/TCP   15s
 kubernetes   ClusterIP      10.96.0.1        <none>        443/TCP          26m
 ```
+
 The kubernetes service is default, but we also have our own service first-app. We still can't see the external IP.
 To see the external IP we run:
+
 ```bash
 tom@tom-ubuntu:~$ minikube service first-app
 |-----------|-----------|-------------|---------------------------|
@@ -2531,6 +2571,7 @@ tom@tom-ubuntu:~$ minikube service first-app
 🎉  Opening service default/first-app in default browser...
 tom@tom-ubuntu:~$ Opening in existing browser session.
 ```
+
 Our app then starts in the browser on the IP address:
 
 ![image](https://user-images.githubusercontent.com/27693622/235322624-a6514a0a-4441-4a46-a232-cc97f61ef070.png)
@@ -2543,12 +2584,16 @@ Our events show that the container has restarted and then the pod has restarted:
 Each time the pod was restarted we started new containers.
 
 #### Scaling
+
 We can scale our application using the following command:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/welcome$ kubectl scale deployment/first-app --replicas=3
 deployment.apps/first-app scaled
 ```
+
 We now have three running pods:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/welcome$ kubectl get pods
 NAME                        READY   STATUS    RESTARTS        AGE
@@ -2560,4 +2605,245 @@ first-app-886784874-wn4zb   1/1     Running   0               15s
 
 We can cause the pods to restart by visiting /error. The pods then restart to fulfil the scaling instruction:
 ![image](https://user-images.githubusercontent.com/27693622/235322907-8b7db092-ee00-4fbc-898f-275960724610.png)
+
+We can also change code in our docker container and push the change to dockerhub. We can then set our image for our
+deployment to our new image:
+
+```bash
+tom@tom-ubuntu:~$ kubectl set image deployment/first-app kub-first-app=tomspencerlondon/kub-first-app
+```
+
+We can then set the new image being used:
+
+```bash
+tom@tom-ubuntu:~$ kubectl set image deployment/first-app kub-first-app=tomspencerlondon/kub-first-app
+```
+
+This doesn't change our code on the running pods. We need to tag our image to ensure that it is used as the new image.
+We first tag the image and then push it to docker hub. We can then set the image to the new image:
+
+```bash
+tom@tom-ubuntu:~$ kubectl set image deployment/first-app kub-first-app=tomspencerlondon/kub-first-app:2
+deployment.apps/first-app image updated
+```
+
+We can see the rollout status with:
+
+```bash
+tom@tom-ubuntu:~$ kubectl rollout status deployment/first-app
+deployment "first-app" successfully rolled out
+```
+
+We have now updated our application with the set image command.
+
+If we update with a non-existing image:
+
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl set image deployment/first
+-app kub-first-app=tomspencerlondon/kub-first-app:3
+deployment.apps/first-app image updated
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl rollout status deployment/first-app
+Waiting for deployment "first-app" rollout to finish: 1 out of 3 new replicas have been updated...
+```
+
+The update just hangs but does not affect the other pods.
+We can use:
+
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/more-complex-docker$ kubectl get pods
+NAME                         READY   STATUS         RESTARTS        AGE
+first-app-78f86c8658-54fvg   1/1     Running        1 (7m49s ago)   13h
+first-app-78f86c8658-nvc78   1/1     Running        1 (7m49s ago)   13h
+first-app-78f86c8658-w9th2   1/1     Running        1 (7m49s ago)   13h
+first-app-7d77b99977-thzpc   0/1     ErrImagePull   0               3m25s
+
+```
+
+to check running pods. We can see that one pod is failing.
+We can now rollback the problem deployment:
+
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/more-complex-docker$ kubectl rollout undo deployment/first-app
+deployment.apps/first-app rolled back
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/more-complex-docker$ kubectl get pods
+NAME                         READY   STATUS    RESTARTS        AGE
+first-app-78f86c8658-54fvg   1/1     Running   1 (8m58s ago)   13h
+first-app-78f86c8658-nvc78   1/1     Running   1 (8m58s ago)   13h
+first-app-78f86c8658-w9th2   1/1     Running   1 (8m58s ago)   13h
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/more-complex-docker$ kubectl rollout status deployment/first-app
+deployment "first-app" successfully rolled out
+```
+
+We can check the rollout history with:
+
+```bash
+tom@tom-ubuntu:~$ kubectl rollout history deployment/first-app
+deployment.apps/first-app 
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         <none>
+```
+
+We can get more detail on a revision:
+
+```bash
+tom@tom-ubuntu:~$ kubectl rollout history deployment/first-app --revision 3
+deployment.apps/first-app with revision #3
+Pod Template:
+  Labels:	app=first-app
+	pod-template-hash=7d77b99977
+  Containers:
+   kub-first-app:
+    Image:	tomspencerlondon/kub-first-app:3
+    Port:	<none>
+    Host Port:	<none>
+    Environment:	<none>
+    Mounts:	<none>
+  Volumes:	<none>
+```
+
+To go back to a previous revision we can use:
+
+```bash
+tom@tom-ubuntu:~$ kubectl rollout undo deployment/first-app --to-revision=1
+deployment.apps/first-app rolled back
+```
+
+We can delete all our work on kubernetes with:
+
+```bash
+tom@tom-ubuntu:~$ kubectl delete service first-app
+service "first-app" deleted
+tom@tom-ubuntu:~$ kubectl delete deployment first-app
+deployment.apps "first-app" deleted
+tom@tom-ubuntu:~$ kubectl get pods
+NAME                        READY   STATUS        RESTARTS        AGE
+first-app-886784874-7g22b   1/1     Terminating   1 (3m37s ago)   4m
+first-app-886784874-clf9m   1/1     Terminating   1 (3m37s ago)   4m6s
+first-app-886784874-nd5zb   1/1     Terminating   1 (3m36s ago)   4m2s
+```
+
+### Declarative Approach
+
+Earlier we used docker compose files to define our application. We can do the same with kubernetes. We can create a
+resource definition file like the following for example:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-app
+spec:
+  selector:
+    matchLabels:
+      app: second-dummy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: second-dummy
+    spec:
+      containers:
+        - name: second-node
+          image: "tomspencerlondon/kub-first-app"
+```
+
+Here we define the number of instances in the deployment and the image we are referring to. This is the comparison:
+
+| Imperative                                                             | Declarative                                                      |
+|------------------------------------------------------------------------|------------------------------------------------------------------|
+| kubectl create deployment ...                                          | kubectl apply -f config.yaml                                     |
+| Individual commands are executed to trigger certain Kubernetes actions | A config file is defined and applied to change the desired state |
+| Comparable to using docker run only                                    | Comparable to Docker Compose with compose files                  |
+
+Now we can use configuration files without running lots of kubectl commands. First we check that our workspace is clean:
+```bash
+tom@tom-ubuntu:~$ kubectl get deployments
+No resources found in default namespace.
+tom@tom-ubuntu:~$ kubectl get pods
+No resources found in default namespace.
+tom@tom-ubuntu:~$ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   15h
+```
+The only service is the default Kubernetes service. 
+
+### Deploy with a config file
+We first add a deployment.yaml file with our configuration:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: second-app-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: second-app
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: second-app
+        tier: backend
+    spec:
+      containers:
+        - name: second-node
+          image: tomspencerlondon/kub-first-app:2
+```
+We have added a selector entry for the spec of the deployment. The deployment watches to see which pods it needs to control.
+We then apply the configuration with:
+
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f=deployment.yaml
+deployment.apps/second-app-deployment created
+```
+We can check the deployment and the pod:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+second-app-deployment   1/1     1            1           20s
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get pods
+NAME                                     READY   STATUS    RESTARTS   AGE
+second-app-deployment-5b6dd555c6-w4vdg   1/1     Running   0          32s
+```
+Next we will declare a service for our deployment. We add a service.yaml file with the following configuration:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: second-app
+    tier: backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+```
+We can apply this with:
+
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f service.yaml
+service/backend created
+```
+We can then list the service with:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get service
+NAME         TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+backend      LoadBalancer   10.109.14.67   <pending>     8080:30640/TCP   49s
+kubernetes   ClusterIP      10.96.0.1      <none>        443/TCP          21h
+```
+We then can view the service with minikube:
+```bash
+minikube service backend
+```
+![image](https://user-images.githubusercontent.com/27693622/235367969-4ce47316-0f31-491c-b0c5-8f16d3673e71.png)
+
+
 
