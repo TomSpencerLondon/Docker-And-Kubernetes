@@ -2974,3 +2974,15 @@ There are also lots of configuration options for the container objects such as i
 We can use Always to ensure that changes to the image with the same tag are pulled. We can use Never to ensure that the image
 is never pulled. We can use IfNotPresent to ensure that the image is only pulled if it is not present on the node.
 
+### Managing Data & Volumes with Kubernetes
+We can use volumes to store data in Kubernetes. We can use volumes to store data added to a container.
+We will now look at how to use volumes with Kubernetes. We learn about volumes and persistent volumes and persistent volume
+claims. We will also learn about environment variables.
+
+#### State
+State is data created and used by our application which must not be lost. There are different types of state:
+- user-generated data, user accounts - usually stored in databases and perhaps sometimes files
+- intermediate results derived by the app are often stored in memory, temporary database tables or files
+
+We use volumes to keep state on docker containers regardless of whether they are stopped or removed.
+
