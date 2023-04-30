@@ -2845,5 +2845,15 @@ minikube service backend
 ```
 ![image](https://user-images.githubusercontent.com/27693622/235367969-4ce47316-0f31-491c-b0c5-8f16d3673e71.png)
 
+We can delete the deployment with the name of the deployment:
+```bash
+kubectl delete deployment second-app-deployment
+```
+but we can also use the configuration:
+```bash
+kubectl delete -f=deployment.yaml
+```
+This would delete the deployment. 
+
 
 
