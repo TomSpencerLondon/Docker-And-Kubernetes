@@ -2758,6 +2758,7 @@ Here we define the number of instances in the deployment and the image we are re
 | Comparable to using docker run only                                    | Comparable to Docker Compose with compose files                  |
 
 Now we can use configuration files without running lots of kubectl commands. First we check that our workspace is clean:
+
 ```bash
 tom@tom-ubuntu:~$ kubectl get deployments
 No resources found in default namespace.
@@ -2767,9 +2768,11 @@ tom@tom-ubuntu:~$ kubectl get services
 NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   15h
 ```
-The only service is the default Kubernetes service. 
+
+The only service is the default Kubernetes service.
 
 ### Deploy with a config file
+
 We first add a deployment.yaml file with our configuration:
 
 ```yaml
@@ -2793,14 +2796,18 @@ spec:
         - name: second-node
           image: tomspencerlondon/kub-first-app:2
 ```
-We have added a selector entry for the spec of the deployment. The deployment watches to see which pods it needs to control.
+
+We have added a selector entry for the spec of the deployment. The deployment watches to see which pods it needs to
+control.
 We then apply the configuration with:
 
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f=deployment.yaml
 deployment.apps/second-app-deployment created
 ```
+
 We can check the deployment and the pod:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
 NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
@@ -2809,6 +2816,7 @@ tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ ku
 NAME                                     READY   STATUS    RESTARTS   AGE
 second-app-deployment-5b6dd555c6-w4vdg   1/1     Running   0          32s
 ```
+
 Next we will declare a service for our deployment. We add a service.yaml file with the following configuration:
 
 ```yaml
@@ -2826,34 +2834,45 @@ spec:
       targetPort: 8080
   type: LoadBalancer
 ```
+
 We can apply this with:
 
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f service.yaml
 service/backend created
 ```
+
 We can then list the service with:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get service
 NAME         TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
 backend      LoadBalancer   10.109.14.67   <pending>     8080:30640/TCP   49s
 kubernetes   ClusterIP      10.96.0.1      <none>        443/TCP          21h
 ```
+
 We then can view the service with minikube:
+
 ```bash
 minikube service backend
 ```
+
 ![image](https://user-images.githubusercontent.com/27693622/235367969-4ce47316-0f31-491c-b0c5-8f16d3673e71.png)
 
 We can delete the deployment with the name of the deployment:
+
 ```bash
 kubectl delete deployment second-app-deployment
 ```
+
 but we can also use the configuration:
+
 ```bash
 kubectl delete -f=deployment.yaml
 ```
+
 This would delete the deployment. We can also have one file with all the configuration:
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -2889,15 +2908,19 @@ spec:
         - name: second-node
           image: tomspencerlondon/kub-first-app:2
 ```
+
 We use dashes to separate the Deployment and Service definitions. We also use 3 dashes to separate the objects.
 The Service would then continuously monitor the deployment.
 To test this we can delete the deployment and service we started earlier with:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl delete -f=deployment.yaml -f=service.yaml
 deployment.apps "second-app-deployment" deleted
 service "backend" deleted
 ```
+
 and then apply the new merged master configuration:
+
 ```bash
 
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl apply -f=master-deployment.yaml
@@ -2907,8 +2930,10 @@ deployment.apps/second-app-deployment created
 ```
 
 ### Selectors
+
 Alongside selector matchLabels we can use matchExpressions.
 The matchExpressions available are In, NotIn and Exists.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -2921,23 +2946,28 @@ spec:
     #      app: second-app
     #      tier: backend
     matchExpressions:
-      - {key: app, operator: In, values: [second-app, first-app]}
+      - { key: app, operator: In, values: [ second-app, first-app ] }
 ```
 
 We can also delete by selector:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl get deployments
 NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
 second-app-deployment   1/1     1            1           6m20s
 ```
-We use add the label to our service.yaml and deployment.yml and rerun the deployments to give them labels. We can then 
+
+We use add the label to our service.yaml and deployment.yml and rerun the deployments to give them labels. We can then
 delete the deploymnent and service with:
+
 ```bash
 tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-action-01-starting-setup$ kubectl delete deployments,services -l group=example
 deployment.apps "second-app-deployment" deleted
 service "backend" deleted
 ```
+
 We can add a liveness probe for the containers to ensure that the deployment is restarted when there is an error:
+
 ```bash
 apiVersion: apps/v1
 kind: Deployment
@@ -2967,22 +2997,143 @@ spec:
             periodSeconds: 10
             initialDelaySeconds: 5
 ```
-The liveness probe is useful as a health check to ensure that the container is running correctly. If the liveness probe fails
+
+The liveness probe is useful as a health check to ensure that the container is running correctly. If the liveness probe
+fails
 then the container is restarted.
 
-There are also lots of configuration options for the container objects such as imagePullPolicy: Always, Never or IfNotPresent.
-We can use Always to ensure that changes to the image with the same tag are pulled. We can use Never to ensure that the image
+There are also lots of configuration options for the container objects such as imagePullPolicy: Always, Never or
+IfNotPresent.
+We can use Always to ensure that changes to the image with the same tag are pulled. We can use Never to ensure that the
+image
 is never pulled. We can use IfNotPresent to ensure that the image is only pulled if it is not present on the node.
 
 ### Managing Data & Volumes with Kubernetes
+
 We can use volumes to store data in Kubernetes. We can use volumes to store data added to a container.
-We will now look at how to use volumes with Kubernetes. We learn about volumes and persistent volumes and persistent volume
+We will now look at how to use volumes with Kubernetes. We learn about volumes and persistent volumes and persistent
+volume
 claims. We will also learn about environment variables.
 
 #### State
+
 State is data created and used by our application which must not be lost. There are different types of state:
+
 - user-generated data, user accounts - usually stored in databases and perhaps sometimes files
 - intermediate results derived by the app are often stored in memory, temporary database tables or files
 
-We use volumes to keep state on docker containers regardless of whether they are stopped or removed.
+We use volumes to keep state on docker containers regardless of whether they are stopped or removed. We use volumes with
+Kubernetes because we are still dealing with containers.
+
+Now Kubernetes runs our Containers. We don't directly run our containers. We need to tell Kubernetes to add Volumes to
+our
+Containers.
+
+#### Kubernetes & Volumes
+
+- Kubernetes can mount Volumes into Containers
+    - A broad variety of Volume types / drivers are supported (more than docker)
+        - Volumes can be shared between Containers in a Pod
+        - Cloud-provider specific volumes
+    - volume lifetime depends on the pod lifetime (this can cause problems)
+        - Volumes survive container restarts and removal
+        - volumes are removed when pods are destroyed
+    - If we want volumes to survive pods we need to use Persistent Volumes
+
+| Kubernetes Volumes                              | Docker Volumes                                  |
+|-------------------------------------------------|-------------------------------------------------|
+| Supports many different Drivers and Types       | Basically no Driver / Type Support              |
+| Volumes are not necessarily persistent          | Volumes persist until manually cleared          |
+| Volumes survive Container restarts and removals | Volumes survive Container restarts and removals |
+
+#### Creating a new deployment & service
+This is quite useful for storing deployments:
+https://kubernetes.io/docs/concepts/storage/volumes/
+
+In order to add a volume to our application we first add an error route to our application:
+
+```javascript
+app.get('/error', () => {
+  process.exit(1);
+})
+```
+This is to test the data volumes survive a restart. We then add a volume to our deployment.yaml:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: tomspencerlondon/kub-data-demo:1
+          volumeMounts:
+            - name: story-volume
+              mountPath: /app/story
+      volumes:
+        - name: story-volume
+          emptyDir: {}
+
+```
+
+Here we add a volume with the emptyDir option. We also refer to the volume in the container section.
+This is useful for all the volume options on Kubernetes:
+https://kubernetes.io/docs/concepts/storage/volumes/
+
+EmptyDir does not persist volumes to other replicas. To get around this we can use hostPath for storing the volumes.
+We can use hostPath to store the volumes on the host machine. We can use hostPath to store the volumes on the host:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: tomspencerlondon/kub-data-demo:1
+          volumeMounts:
+            - name: story-volume
+              mountPath: /app/story
+      volumes:
+        - name: story-volume
+          hostPath:
+            path: /data
+            type: DirectoryOrCreate
+```
+
+There is another Volume Type, Container Storage Interface (CSI). CSI is a relatively new volume type added to ensure that they
+don't have to add more and more built in types but rather share the interface for defining volumes. CSI is a standard that gives us access to drivers such as
+AWS EFS CSI:
+https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html
+
+#### Persistent volumes
+Volumes are destroyed when pods are removed. When we use the hostPath type the volumes are stored on the host machine.
+When we have several worker nodes this will no longer work. Pode- and Node-independent Volumes are sometimes required.
+Kubernetes also has Persistent Volumes which are independent of Pods and Nodes. We can use Persistent Volumes to store
+data across Pods. We will be able to define the persistent volume once and use it across multiples Pods.
+AWSElasticBlockStore does persist volumes across pods. PersistentVolume is more than persistent volume storage. With PersistentVolumes
+we have pod and node independence and full control over how the volume is configured. PersistentVolumes are built around the idea of
+pod and node independence. 
+
+![image](https://user-images.githubusercontent.com/27693622/235459049-e2272da1-24e1-43fd-8f3a-ed10922f3d55.png)
+
 
