@@ -14,13 +14,18 @@ spec:
     spec:
       containers:
         - name: story
-          image: tomspencerlondon/kub-data-demo:1
+          image: tomspencerlondon/kub-data-demo:2
+          env:
+            - name: STORY_FOLDER
+              valueFrom:
+                configMapKeyRef:
+                  name: data-store-env
+                  key: folder
           volumeMounts:
             - name: story-volume
               mountPath: /app/story
       volumes:
         - name: story-volume
-          hostPath:
-            path: /data
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: host-pvc
 

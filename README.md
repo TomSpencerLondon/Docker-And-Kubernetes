@@ -3137,3 +3137,262 @@ pod and node independence.
 ![image](https://user-images.githubusercontent.com/27693622/235459049-e2272da1-24e1-43fd-8f3a-ed10922f3d55.png)
 
 
+### Defining a Persistent Volume
+We can define a PersistentVolume in a yaml file:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: host-pv
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data
+    type: DirectoryOrCreate
+```
+
+This link is useful on the difference between Block, file and object storage:
+https://www.computerweekly.com/feature/Storage-pros-and-cons-Block-vs-file-vs-object-storage
+
+For the hostPath type of volume we can only have readWriteOnce access.
+
+The second thing we need to do is define our claim. We have to configure the claim and define the claims for the pods that want 
+to use the claim.
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: host-pvc
+spec:
+  volumeName: host-pv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+```
+We then add the persistentVolumeClaim to the deployment.yaml:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: tomspencerlondon/kub-data-demo:1
+          volumeMounts:
+            - name: story-volume
+              mountPath: /app/story
+      volumes:
+        - name: story-volume
+          persistentVolumeClaim:
+            claimName: host-pvc
+```
+
+We can then test this by running the following commands:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=host-pv.yaml
+persistentvolume/host-pv created
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=host-pvc.yaml
+persistentvolumeclaim/host-pvc created
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=deployment.yaml
+deployment.apps/story-deployment configured
+```
+
+We now have pod and node independence. We can now store data in a way that will never be lost. We should remember that there
+are two types of state:
+- user generated data, user accounts
+  - often stored in a database but could be files (e.g. uploads)
+- intermediate results derived by the app
+  - often stored memory, temporary database tables or files
+
+### "Normal" Volumes vs Persistent Volumes
+Volumes allow us to persist data. Normal volumes are defined with a pod whereas persistent volumes are independent of pods.
+Normal volumes are destroyed when pods are destroyed. Persistent volumes are not destroyed when pods are destroyed.
+Normal volumes are defined in the pod definition whereas persistent volumes are defined in a separate yaml file.
+It can be repetitive and hard to administer normal volumes on large scale applications with several pods.
+
+For persistent volumes, the volume is a standalone cluster resource (not attached to a pod). The volumes are standalone and claimed via
+a PVC. The configuration is defined once and used multiple times. Teams adding the PVC to their pods don't need to know how the volume is configured.
+We are able to use the same volume across multiple pods. We can also use the same volume across multiple deployments.
+We know that the volume won't be lost when pods are destroyed.
+
+### Environment Variables
+We can use environment variables to pass data to our containers. We might want to define an environment variable 
+for the file path where we are storing our data:
+
+```javascript
+const filePath = path.join(__dirname, process.env.STORY_FOLDER, 'text.txt');
+```
+
+We can then define the environment variable in the deployment.yaml:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: tomspencerlondon/kub-data-demo:1
+          env:
+            - name: STORY_FOLDER
+              value: 'story'
+          volumeMounts:
+            - name: story-volume
+              mountPath: /app/story
+      volumes:
+        - name: story-volume
+          persistentVolumeClaim:
+            claimName: host-pvc
+
+```
+We can then build our new image and use the environment variables:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ docker build -t tomspencerlondon/kub-data-demo:2 .
+[+] Building 0.2s (10/10) FINISHED                                                                            
+ => [internal] load build definition from Dockerfile                                                     0.0s
+ => => transferring dockerfile: 157B                                                                     0.0s
+ => [internal] load .dockerignore                                                                        0.0s
+ => => transferring context: 68B                                                                         0.0s
+ => [internal] load metadata for docker.io/library/node:14-alpine                                        0.0s
+ => [1/5] FROM docker.io/library/node:14-alpine                                                          0.0s
+ => [internal] load build context                                                                        0.0s
+ => => transferring context: 7.38kB                                                                      0.0s
+ => CACHED [2/5] WORKDIR /app                                                                            0.0s
+ => CACHED [3/5] COPY package.json .                                                                     0.0s
+ => CACHED [4/5] RUN npm install                                                                         0.0s
+ => [5/5] COPY . .                                                                                       0.1s
+ => exporting to image                                                                                   0.1s
+ => => exporting layers                                                                                  0.0s
+ => => writing image sha256:e453ca0203b01955eb3cececd208bae1ebb0de5f2f880c74f516d939a336e769             0.0s
+ => => naming to docker.io/tomspencerlondon/kub-data-demo:2                                              0.0s
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ docker push tomspencerlondon/kub-data-demo:2
+The push refers to repository [docker.io/tomspencerlondon/kub-data-demo]
+8e63ff19c878: Pushed 
+5102296f7b58: Layer already exists 
+534e129c8895: Layer already exists 
+1955b6c3e5a2: Layer already exists 
+31f710dc178f: Layer already exists 
+a599bf3e59b8: Layer already exists 
+e67e8085abae: Layer already exists 
+f1417ff83b31: Layer already exists 
+2: digest: sha256:c423be9837652a2a8ce55b694ce066cc42d68bcea45d9c1a88fea5ccdcad03c7 size: 1990
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=deployment.yaml
+deployment.apps/story-deployment configured
+```
+
+We can also define environment variables in a separate configmap:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-store-env
+data:
+  folder: 'story'
+```
+
+We then deploy the config map:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=environment.yaml
+configmap/data-store-env created
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl get configmap
+NAME               DATA   AGE
+data-store-env     1      8s
+kube-root-ca.crt   1      42h
+```
+
+We can then use the config map in our deployment.yaml:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: story-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: story
+  template:
+    metadata:
+      labels:
+        app: story
+    spec:
+      containers:
+        - name: story
+          image: tomspencerlondon/kub-data-demo:2
+          env:
+            - name: STORY_FOLDER
+              valueFrom:
+                configMapKeyRef:
+                  name: data-store-env
+                  key: folder
+          volumeMounts:
+            - name: story-volume
+              mountPath: /app/story
+      volumes:
+        - name: story-volume
+          persistentVolumeClaim:
+            claimName: host-pvc
+
+```
+We then apply the configMap environment variable in our deployment.yaml:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl apply -f=deployment.yaml
+deployment.apps/story-deployment configured
+
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-data-01-starting-setup$ kubectl get deployments
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+story-deployment   2/2     2            2           17h
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
