@@ -7,20 +7,7 @@ import NewTask from './components/NewTask';
 function App() {
   const [tasks, setTasks] = useState([]);
 
-  const fetchTasks = useCallback(function () {
-    fetch('/api/tasks', {
-      headers: {
-        'Authorization': 'Bearer abc'
-      }
-    })
-      .then(function (response) {
-        return response.json();
-      })
-      .then(function (jsonData) {
-        setTasks(jsonData.tasks);
-      });
-  }, []);
-
+ ku
   useEffect(
     function () {
       fetchTasks();

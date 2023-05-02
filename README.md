@@ -3675,3 +3675,9 @@ https://kubernetes.io/docs/setup/production-environment/tools/kops/
 
 ![image](https://user-images.githubusercontent.com/27693622/235656449-a5d50538-4e6a-41b5-9512-d223ad7a0103.png)
 
+
+### AWS EKS vs AWS ECS
+AWS EKS is a managed service for Kubernetes. AWS ECS is a managed service for Docker containers. 
+
+![image](https://user-images.githubusercontent.com/27693622/235657452-98cbb84b-67e2-4c38-a76b-7b9612e9d2d9.png)
+
