@@ -3681,3 +3681,18 @@ AWS EKS is a managed service for Kubernetes. AWS ECS is a managed service for Do
 
 ![image](https://user-images.githubusercontent.com/27693622/235657452-98cbb84b-67e2-4c38-a76b-7b9612e9d2d9.png)
 
+We first setup our EKS cluster in AWS. The instructions here are quite useful for setting up the cluster:
+https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html
+
+I have opted for setting up the cluster in the AWS Management Console. We then need to update the config file in our .kube folder:
+```bash
+tom@tom-ubuntu:~/.kube$ aws eks --region eu-west-2 update-kubeconfig --name kub-dep-demo
+Added new context arn:aws:eks:eu-west-2:<AWS_ACCOUNT_ID>:cluster/kub-dep-demo to /home/tom/.kube/config
+```
+Here we are adding the specific config for the cluster we created. We have also saved the earlier config file with config.minikube so
+that we can revert to that config when we want to run clusters locally with minikube.
+
+Now the kubectl commands run against the AWS managed EKS cluster.
+
+
+
