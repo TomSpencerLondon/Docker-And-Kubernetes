@@ -3655,3 +3655,23 @@ We can use pod-internal with local-host. We use outside communication with LoadB
 We can either look up the IP address manually or use the automatically generated cluster IP domain name: auth-service.default. We can also use the environment variable:
 process.env.AUTH_SERVICE_SERVICE_HOST. We can also use the reverse proxy to get the IP address of the service.
 
+### Kubernetes Deployment - AWS EKS
+So far we have used minikube to run our kubernetes cluster locally. We will now run the application on production using AWS
+Elastic Kubernetes Service (EKS).
+We should remember the following:
+
+
+| What Kubernetes will do                                                                | What we need to do                                                                             |
+|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| Kubernetes helps with managing the Pods                                                | Kubernetes will not create the infrastructure                                                  |
+| Create objects (e.g. Pods) and manage them                                             | Create the Cluster and the Node Instances (Worker + Master Nodes)                              |
+| Monitor Pods and re-create them, scale Pods etc.                                       | Setup API Server, kubelet and other Kubernetes services / software on Nodes                    |
+| Kubernetes utilizes the provided (cloud) resources to apply your configuration / goals | Create other (cloud) provider resources that might be needed (e.g. Load Balancer, Filesystems) |
+
+Kubernetes will not spin up remote machines, remote instances or loadbalancers. It hands these tasks to the cluster or nodes that are already running.
+Kubernetes control center and nodes need to be set up manually. We will use AWS EKS to set up the control center and nodes.
+We need to set up the infrastructure for Kubernetes to run on. This link is quite useful for setting up kubernetes on your own in the cloud:
+https://kubernetes.io/docs/setup/production-environment/tools/kops/
+
+![image](https://user-images.githubusercontent.com/27693622/235656449-a5d50538-4e6a-41b5-9512-d223ad7a0103.png)
+
