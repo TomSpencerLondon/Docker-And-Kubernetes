@@ -3372,25 +3372,202 @@ story-deployment   2/2     2            2           17h
 ```
 
 
+### Kubernetes Networking
+Here we will look at how to connect pods and containers with each other and the outside world.
 
+![image](https://user-images.githubusercontent.com/27693622/235469973-aba73757-cbbc-4d0c-b086-5f2e74cd12da.png)
 
+Services are key for networking and sending requests to the cluster. Next we setup a users-deployment.yaml:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users
+          image: tomspencerlondon/kub-demo-users
+```
 
+and also a load balancer for communicating with the outside world:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+spec:
+  selector:
+    app: users
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+```
 
+For the auth api we are using the auth api in the same pod as the users api.
 
+#### Pod internal communication
+For two containers in the same pod we can use localhost to communicate between them.
 
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users
+          image: tomspencerlondon/kub-demo-users:latest
+          env:
+            - name: AUTH_ADDRESS
+              value: localhost
+        - name: auth
+          image: tomspencerlondon/kub-demo-auth:latest
+```
 
+We can now query the Users API and get a response:
+![image](https://user-images.githubusercontent.com/27693622/235626071-611856d9-04d0-4297-a296-ed42d20b5498.png)
 
+We now need to create another pod for the Users API so that the Auth API can be queried by the Users API and the Tasks API:
 
+![image](https://user-images.githubusercontent.com/27693622/235627466-64ec1c15-e1c8-489c-9ab1-c8f05a4b44ef.png)
 
+We will now look at pod to pod communication inside a cluster. We will need services to achieve this.
+We first split out the users-deployment and the auth-deployment into separate pods:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: tomspencerlondon/kub-demo-auth:latest
+```
 
+We then create a service for the auth pod:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: auth
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+Here we use ClusterIP because we want the communication to be only inside the cluster to reach the auth-service.
+We now don't use localhost for the auth address but the IP address for the auth-service. We can get the IP address for the auth-service by running:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-network-01-starting-setup/kubernetes$ kubectl apply -f=auth-service.yaml -f=auth-deployment.yaml
+service/auth-service created
+deployment.apps/auth-deployment created
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-network-01-starting-setup/kubernetes$ kubectl get services
+NAME            TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+auth-service    ClusterIP      10.111.238.49    <none>        80/TCP           8s
+kubernetes      ClusterIP      10.96.0.1        <none>        443/TCP          2d13h
+users-service   LoadBalancer   10.110.196.238   <pending>     8080:30245/TCP   34m
+```
+It is a bit annoying to get the IP address manually. Kubernetes does give us environment variables automatically with IP addresses of the services.
+We can use the automatically generated environment variable:
+```javascript
+  const response = await axios.get(
+      `http://${process.env.AUTH_SERVICE_SERVICE_HOST}/token/` + hashedPassword + '/' + password
+  );
+```
 
+There is an even more convenient version of environment variables which uses CoreDNS:
+https://coredns.io/
 
+This creates domain names for all our services which is simply the service name for the plus the namespace the service is a part of. For us, this is default:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users
+          image: tomspencerlondon/kub-demo-users:latest
+          env:
+            - name: AUTH_ADDRESS
+              value: "auth-service.default"
+```
+So when we want to send requests to a service we have three choices:
+- look up the ip ourselves on the service
+- use the automatically generated environment variable (process.env.AUTH_SERVICE_SERVICE_HOST)
+- use the CoreDNS service name (auth-service.default)
 
+The domain name is the simplest version as we don't need to fiddle with environment variables or look up the IP ourselves.
 
+We now add a frontend to our application. For this we need to add the bearer token to our code:
 
+```javascript
+const fetchTasks = useCallback(function () {
+  fetch('http://192.168.49.2:32529/tasks', {
+    headers: {
+      'Authorization': 'Bearer abc'
+    }
+  })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (jsonData) {
+            setTasks(jsonData.tasks);
+          });
+}, []);
+```
 
-
-
+and also allow cors in our tasks api:
+```javascript
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // allow all clients
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // allow these headers
+  next();
+})
+```
 
 
 
