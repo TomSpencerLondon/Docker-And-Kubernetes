@@ -3569,7 +3569,89 @@ app.use((req, res, next) => {
 })
 ```
 
+We now want to deploy our frontend to the cluster. We add a frontend-deployment.yaml:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: tasks
+          image: tomspencerlondon/kub-demo-frontend:latest
+```
+and a frontend-service.yaml:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+```
+and then expose the service with:
+```bash
+minikube service frontend-service
+```
 
+![image](https://user-images.githubusercontent.com/27693622/235647685-cbd0125e-344e-4401-9337-b9ce42693607.png)
 
+We have one flaw in the frontend code. The address for the request is hardcoded. We can fix this by using a reverse proxy.
+```nginx configuration
+server {
+  listen 80;
 
+  location /api/ {
+    proxy_pass http://tasks-service.default:8000/;
+  }
+  
+  location / {
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+    try_files $uri $uri/ /index.html =404;
+  }
+  
+  include /etc/nginx/extra-conf.d/*.conf;
+}
+```
+This allows us to use relative paths in our code:
+```javascript
+ const fetchTasks = useCallback(function () {
+    fetch('/api/tasks', {
+      headers: {
+        'Authorization': 'Bearer abc'
+      }
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (jsonData) {
+        setTasks(jsonData.tasks);
+      });
+  }, []);
+```
+This is a nice way of leveraging the automatically generated domain names. We can use the reverse proxy to get the IP address
+of the targeted service.
+
+This is the networking admin and kubernetes cluster configuration for the application:
+![image](https://user-images.githubusercontent.com/27693622/235650994-8e7cf638-9106-4c42-9021-48565ff55f1a.png)
+
+We can use pod-internal with local-host. We use outside communication with LoadBalancer, and we used cluster internal communication with the ClusterIP.
+We can either look up the IP address manually or use the automatically generated cluster IP domain name: auth-service.default. We can also use the environment variable:
+process.env.AUTH_SERVICE_SERVICE_HOST. We can also use the reverse proxy to get the IP address of the service.
 
