@@ -4021,3 +4021,6 @@ deployment.apps/users-deployment created
 We can now check the logs:
 ![image](https://user-images.githubusercontent.com/27693622/235898466-1e68a677-82ba-4e84-b7f3-0b8a7b4f9dad.png)
 
+The code for this section is contained in kub-deploy-06-finished. We can now login with a user and view and add tasks for the user:
+![image](https://user-images.githubusercontent.com/27693622/235998114-89e062f9-6ec2-4dbe-a802-36143e35b961.png)
+
