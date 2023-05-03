@@ -35,6 +35,8 @@ mongoose.connect(
   { useNewUrlParser: true },
   (err) => {
     if (err) {
+      console.log(err);
+      console.log(process.env.MONGODB_CONNECTION_URI);
       console.log('COULD NOT CONNECT TO MONGODB!');
     } else {
       app.listen(3000);

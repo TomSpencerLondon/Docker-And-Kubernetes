@@ -3692,7 +3692,332 @@ Added new context arn:aws:eks:eu-west-2:<AWS_ACCOUNT_ID>:cluster/kub-dep-demo to
 Here we are adding the specific config for the cluster we created. We have also saved the earlier config file with config.minikube so
 that we can revert to that config when we want to run clusters locally with minikube.
 
-Now the kubectl commands run against the AWS managed EKS cluster.
+Now the kubectl commands run against the AWS managed EKS cluster. This video is quite useful if you have used a different user to setup your cluster:
+https://www.youtube.com/watch?v=GI4Kt8gBIA0
 
+I have also set up a mongodb atlas cluster (sandbox - free tier) with a user and password. For the moment I allowed traffic from anywhere.
+We can get the url for the service with:
 
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-deploy-01-starting-setup/kubernetes$ kubectl get services
+NAME            TYPE           CLUSTER-IP       EXTERNAL-IP                                                              PORT(S)        AGE
+auth-service    ClusterIP      10.100.18.2      <none>                                                                   3000/TCP       43m
+kubernetes      ClusterIP      10.100.0.1       <none>                                                                   443/TCP        18h
+users-service   LoadBalancer   10.100.253.230   afd9263d0480a4764ac7b86ea039a80d-902333757.eu-west-2.elb.amazonaws.com   80:31296/TCP   43m
+```
+
+![image](https://user-images.githubusercontent.com/27693622/235886381-635676fa-2d72-473f-8202-06511038ad27.png)
+
+#### EKS Volumes
+We can now look at volumes with EKS. We now want to use the CSI volume type for use with our EKS cluster. We can imagine that we want to save to a file in the
+project folder. In docker compose we would add a volume. In Kubernetes we have two main ways of adding volumes. We can add a volume to the container set up or use a persistent
+volume and a persistent volume claim. The Container Storage Interface is a flexible storage type where 3rd parties can add their own file types with ease.
+We will use EFS with CSI to add a volume to our application. We will use the following link to set up the EFS:
+https://github.com/kubernetes-sigs/aws-efs-csi-driver
+
+This is the command that we use:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes$ kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.5"
+serviceaccount/efs-csi-controller-sa created
+serviceaccount/efs-csi-node-sa created
+clusterrole.rbac.authorization.k8s.io/efs-csi-external-provisioner-role created
+clusterrolebinding.rbac.authorization.k8s.io/efs-csi-provisioner-binding created
+deployment.apps/efs-csi-controller created
+daemonset.apps/efs-csi-node created
+csidriver.storage.k8s.io/efs.csi.aws.com configured
+```
+We next need to create a security group to control access to the VPC of our cluster:
+
+![image](https://user-images.githubusercontent.com/27693622/235896126-3c46b5dc-f319-4e47-a824-1f0941e0c984.png)
+
+This should be linked to the same VPC as our cluster. We then create the EFS file system using the same security group:
+
+![image](https://user-images.githubusercontent.com/27693622/235896373-c14f265a-ffe5-4cec-b55a-c5394a746c85.png)
+
+The file system uses the EKS VPC. We can now create a mount target for the file system:
+```yaml
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-063bd79894a0999b9
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+spec:
+  selector:
+    app: users
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users-api
+          image: tomspencerlondon/kub-dep-users:latest
+          env:
+            - name: MONGODB_CONNECTION_URI
+              value: 'mongodb+srv://tom:X5Y7iU8hXV!7@cluster1.salpt0o.mongodb.net/users?retryWrites=true&w=majority'
+            - name: AUTH_API_ADDRESSS
+              value: 'auth-service.default:3000'
+          volumeMounts:
+            - name: efs-vol
+              mountPath: /app/users
+      volumes:
+        - name: efs-vol
+          persistentVolumeClaim:
+            claimName: efs-pvc
+```
+
+We also add a new user-actions.js and user-routes.js files to the users service:
+This is the user-routes.js file:
+```javascript
+const express = require('express');
+
+const userActions = require('../controllers/user-actions');
+
+const router = express.Router();
+
+router.post('/signup', userActions.createUser);
+
+router.post('/login', userActions.verifyUser);
+
+router.get('/logs', userActions.getLogs);
+
+module.exports = router;
+```
+and user-actions.js:
+```javascript
+```javascript
+const path = require('path');
+const fs = require('fs');
+
+const axios = require('axios');
+const { createAndThrowError, createError } = require('../helpers/error');
+
+const User = require('../models/user');
+
+const validateCredentials = (email, password) => {
+  if (
+      !email ||
+      email.trim().length === 0 ||
+      !email.includes('@') ||
+      !password ||
+      password.trim().length < 7
+  ) {
+    createAndThrowError('Invalid email or password.', 422);
+  }
+};
+
+const checkUserExistence = async (email) => {
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    createAndThrowError('Failed to create user.', 500);
+  }
+
+  if (existingUser) {
+    createAndThrowError('Failed to create user.', 422);
+  }
+};
+
+const getHashedPassword = async (password) => {
+  try {
+    const response = await axios.get(
+        `http://${process.env.AUTH_API_ADDRESSS}/hashed-pw/${password}`
+    );
+    return response.data.hashed;
+  } catch (err) {
+    const code = (err.response && err.response.status) || 500;
+    createAndThrowError(err.message || 'Failed to create user.', code);
+  }
+};
+
+const getTokenForUser = async (password, hashedPassword) => {
+  console.log(password, hashedPassword);
+  try {
+    const response = await axios.post(
+        `http://${process.env.AUTH_API_ADDRESSS}/token`,
+        {
+          password: password,
+          hashedPassword: hashedPassword,
+        }
+    );
+    return response.data.token;
+  } catch (err) {
+    const code = (err.response && err.response.status) || 500;
+    createAndThrowError(err.message || 'Failed to verify user.', code);
+  }
+};
+
+const createUser = async (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  try {
+    validateCredentials(email, password);
+  } catch (err) {
+    return next(err);
+  }
+
+  try {
+    await checkUserExistence(email);
+  } catch (err) {
+    return next(err);
+  }
+
+  let hashedPassword;
+  try {
+    hashedPassword = await getHashedPassword(password);
+  } catch (err) {
+    return next(err);
+  }
+
+  console.log(hashedPassword);
+
+  const newUser = new User({
+    email: email,
+    password: hashedPassword,
+  });
+
+  let savedUser;
+  try {
+    savedUser = await newUser.save();
+  } catch (err) {
+    const error = createError(err.message || 'Failed to create user.', 500);
+    return next(error);
+  }
+
+  const logEntry = `${new Date().toISOString()} - ${savedUser.id} - ${email}\n`;
+
+  fs.appendFile(
+      path.join('/app', 'users', 'users-log.txt'),
+      logEntry,
+      (err) => {
+        console.log(err);
+      }
+  );
+
+  res
+      .status(201)
+      .json({ message: 'User created.', user: savedUser.toObject() });
+};
+
+const verifyUser = async (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  try {
+    validateCredentials(email, password);
+  } catch (err) {
+    return next(err);
+  }
+
+  let existingUser;
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = createError(
+        err.message || 'Failed to find and verify user.',
+        500
+    );
+    return next(error);
+  }
+
+  if (!existingUser) {
+    const error = createError(
+        'Failed to find and verify user for provided credentials.',
+        422
+    );
+    return next(error);
+  }
+
+  try {
+    console.log(password, existingUser);
+    const token = await getTokenForUser(password, existingUser.password);
+    res.status(200).json({ token: token, userId: existingUser.id });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getLogs = (req, res, next) => {
+  fs.readFile(path.join('/app', 'users', 'users-log.txt'), (err, data) => {
+    if (err) {
+      createAndThrowError('Could not open logs file.', 500);
+    } else {
+      const dataArr = data.toString().split('\n');
+      res.status(200).json({ logs: dataArr });
+    }
+  });
+};
+
+exports.createUser = createUser;
+exports.verifyUser = verifyUser;
+exports.getLogs = getLogs;
+```
+
+We have added a getLogs function and save log entries when a new user is created. We also added a new route to get the logs.
+We then push the new image to dockerhub and delete the current deployment:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-deploy-01-starting-setup/kubernetes$ kubectl delete deployment users-deployment
+deployment.apps "users-deployment" deleted
+```
+and apply the new deployment:
+```bash
+tom@tom-ubuntu:~/Projects/Docker-And-Kubernetes/kub-deploy-01-starting-setup/kubernetes$ kubectl apply -f=users.yaml
+storageclass.storage.k8s.io/efs-sc created
+persistentvolume/efs-pv created
+persistentvolumeclaim/efs-pvc created
+service/users-service unchanged
+deployment.apps/users-deployment created
+```
+We can now check the logs:
+![image](https://user-images.githubusercontent.com/27693622/235898466-1e68a677-82ba-4e84-b7f3-0b8a7b4f9dad.png)
 
